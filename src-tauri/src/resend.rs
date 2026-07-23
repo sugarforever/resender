@@ -15,7 +15,7 @@ fn client() -> Client {
 }
 
 /// Perform a request against the Resend API using an explicit key.
-async fn request_with_key(
+pub(crate) async fn request_with_key(
     key: &str,
     method: Method,
     path: &str,

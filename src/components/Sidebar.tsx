@@ -1,4 +1,4 @@
-import { Inbox, Send, PenSquare, Settings, Moon, Sun, Mail } from "lucide-react";
+import { Inbox, Send, PenSquare, Settings, Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,9 +29,11 @@ export function Sidebar({
   return (
     <aside className="bg-sidebar text-sidebar-foreground border-sidebar-border flex w-60 shrink-0 flex-col border-r">
       <div className="flex h-14 items-center gap-2.5 px-4">
-        <div className="bg-primary text-primary-foreground flex size-7 items-center justify-center rounded-lg shadow-sm">
-          <Mail className="size-4" />
-        </div>
+        <img
+          src="/logo.png"
+          alt="Resender"
+          className="size-7 rounded-lg shadow-sm"
+        />
         <span className="text-foreground text-[15px] font-semibold tracking-tight">
           Resender
         </span>

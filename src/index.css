@@ -23,10 +23,10 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.916 0.004 285);
   --input: oklch(0.916 0.004 285);
-  --ring: oklch(0.55 0.16 264);
+  --ring: oklch(0.64 0.16 45);
 
-  /* Restrained brand accent, used sparingly (unread, active nav, links). */
-  --brand: oklch(0.545 0.175 264);
+  /* Warm brand accent, used sparingly (unread, active nav, links). */
+  --brand: oklch(0.63 0.19 40);
   --brand-foreground: oklch(0.985 0 0);
 
   --sidebar: oklch(0.982 0.002 285);
@@ -36,7 +36,7 @@
   --sidebar-accent: oklch(0.955 0.004 285);
   --sidebar-accent-foreground: oklch(0.21 0.006 285);
   --sidebar-border: oklch(0.915 0.004 285);
-  --sidebar-ring: oklch(0.55 0.16 264);
+  --sidebar-ring: oklch(0.64 0.16 45);
 
   /* Soft, layered elevation. */
   --shadow-2xs: 0 1px 2px 0 oklch(0 0 0 / 0.04);
@@ -67,9 +67,9 @@
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 9%);
   --input: oklch(1 0 0 / 13%);
-  --ring: oklch(0.62 0.16 264);
+  --ring: oklch(0.68 0.16 45);
 
-  --brand: oklch(0.68 0.155 264);
+  --brand: oklch(0.72 0.18 45);
   --brand-foreground: oklch(0.98 0 0);
 
   --sidebar: oklch(0.164 0.005 285);
@@ -79,7 +79,7 @@
   --sidebar-accent: oklch(0.262 0.006 285);
   --sidebar-accent-foreground: oklch(0.97 0 0);
   --sidebar-border: oklch(1 0 0 / 8%);
-  --sidebar-ring: oklch(0.62 0.16 264);
+  --sidebar-ring: oklch(0.68 0.16 45);
 
   --shadow-2xs: 0 1px 2px 0 oklch(0 0 0 / 0.28);
   --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.32);

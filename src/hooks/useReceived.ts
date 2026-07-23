@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, errMessage } from "@/lib/api";
-import { notifyNewEmails } from "@/lib/notify";
+import { listen } from "@tauri-apps/api/event";
+import { api } from "@/lib/api";
+import { ensureNotificationPermission } from "@/lib/notify";
 import type { ReceivedEmail } from "@/lib/types";
 
 interface Options {
@@ -8,61 +9,94 @@ interface Options {
   pollIntervalSec: number;
 }
 
+interface InboxData {
+  emails: ReceivedEmail[];
+  newIds: string[];
+}
+
 /**
- * Loads the inbox, polls it on an interval, tracks unread state, and fires a
- * system notification whenever new mail arrives (after the initial load).
+ * Drives the inbox from the Rust background poller. The poller fetches on its
+ * own tokio interval (so it keeps running when the window is backgrounded),
+ * sends system notifications itself, and emits `inbox-data` events that we turn
+ * into UI state. Unread tracking and selection stay on the frontend.
  */
 export function useReceived({ configured, pollIntervalSec }: Options) {
   const [emails, setEmails] = useState<ReceivedEmail[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unreadIds, setUnreadIds] = useState<Set<string>>(new Set());
+  const [nextRefreshAt, setNextRefreshAt] = useState<number | null>(null);
 
-  const knownIds = useRef<Set<string>>(new Set());
-  const firstLoad = useRef(true);
+  // Latest interval, read inside event handlers without re-subscribing.
+  const intervalRef = useRef(pollIntervalSec);
+  intervalRef.current = pollIntervalSec;
+  const appliedInterval = useRef<number | null>(null);
 
-  const refresh = useCallback(
-    async ({ silent = false }: { silent?: boolean } = {}) => {
-      if (!configured) return;
-      if (!silent) setLoading(true);
-      try {
-        const res = await api.listReceived(50);
-        const data = res.data ?? [];
+  // Start/stop the Rust poller alongside the configured lifecycle.
+  useEffect(() => {
+    if (!configured) {
+      setNextRefreshAt(null);
+      return;
+    }
+    let cancelled = false;
+    let unlistenData: (() => void) | undefined;
+    let unlistenError: (() => void) | undefined;
 
-        const fresh = data.filter((e) => !knownIds.current.has(e.id));
-        data.forEach((e) => knownIds.current.add(e.id));
+    setLoading(true);
+    void ensureNotificationPermission();
 
-        if (!firstLoad.current && fresh.length > 0) {
+    (async () => {
+      unlistenData = await listen<InboxData>("inbox-data", (event) => {
+        const { emails: data, newIds } = event.payload;
+        setEmails(data ?? []);
+        if (newIds?.length) {
           setUnreadIds((prev) => {
             const next = new Set(prev);
-            fresh.forEach((e) => next.add(e.id));
+            newIds.forEach((id) => next.add(id));
             return next;
           });
-          void notifyNewEmails(fresh);
         }
-        firstLoad.current = false;
-
-        setEmails(data);
         setError(null);
-      } catch (e) {
-        setError(errMessage(e));
-      } finally {
-        if (!silent) setLoading(false);
-      }
-    },
-    [configured]
-  );
+        setLoading(false);
+        setNextRefreshAt(Date.now() + Math.max(30, intervalRef.current) * 1000);
+      });
+      unlistenError = await listen<string>("inbox-error", (event) => {
+        setError(event.payload);
+        setLoading(false);
+      });
 
-  // Initial load + polling. Re-runs when the interval or configured-state changes.
+      if (cancelled) {
+        unlistenData?.();
+        unlistenError?.();
+        return;
+      }
+      appliedInterval.current = intervalRef.current;
+      await api.startPoller(intervalRef.current);
+    })();
+
+    return () => {
+      cancelled = true;
+      unlistenData?.();
+      unlistenError?.();
+      void api.stopPoller();
+    };
+    // Interval changes are applied via the effect below, not a full restart.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [configured]);
+
+  // Apply interval changes to the running poller without restarting it.
   useEffect(() => {
-    if (!configured) return;
-    void refresh();
-    const id = window.setInterval(
-      () => void refresh({ silent: true }),
-      Math.max(30, pollIntervalSec) * 1000
-    );
-    return () => window.clearInterval(id);
-  }, [configured, pollIntervalSec, refresh]);
+    if (!configured || appliedInterval.current === null) return;
+    if (appliedInterval.current === pollIntervalSec) return;
+    appliedInterval.current = pollIntervalSec;
+    void api.setPollInterval(pollIntervalSec);
+    setNextRefreshAt(Date.now() + Math.max(30, pollIntervalSec) * 1000);
+  }, [configured, pollIntervalSec]);
+
+  const refreshNow = useCallback(() => {
+    setLoading(true);
+    void api.pollNow();
+  }, []);
 
   const markRead = useCallback((id: string) => {
     setUnreadIds((prev) => {
@@ -81,7 +115,9 @@ export function useReceived({ configured, pollIntervalSec }: Options) {
     error,
     unreadIds,
     unreadCount: unreadIds.size,
-    refresh,
+    nextRefreshAt,
+    refresh: refreshNow,
+    refreshNow,
     markRead,
     markAllRead,
   };

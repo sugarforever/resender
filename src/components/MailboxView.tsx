@@ -22,6 +22,7 @@ import {
 import type { Mail } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { RefreshCountdown } from "@/components/RefreshCountdown";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
@@ -39,6 +40,9 @@ interface Props {
   unreadIds?: Set<string>;
   onOpen?: (id: string) => void;
   onReply?: (email: Mail) => void;
+  /** When provided (inbox), the refresh button shows a poll countdown. */
+  nextRefreshAt?: number | null;
+  pollIntervalSec?: number;
 }
 
 export function MailboxView({
@@ -51,6 +55,8 @@ export function MailboxView({
   unreadIds,
   onOpen,
   onReply,
+  nextRefreshAt,
+  pollIntervalSec,
 }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [full, setFull] = useState<Mail | null>(null);
@@ -154,16 +160,25 @@ export function MailboxView({
               </span>
             )}
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onRefresh}
-            disabled={loading}
-            aria-label="Refresh"
-            className="text-muted-foreground hover:text-foreground size-8"
-          >
-            <RefreshCw className={cn("size-4", loading && "animate-spin")} />
-          </Button>
+          {typeof pollIntervalSec === "number" ? (
+            <RefreshCountdown
+              nextRefreshAt={nextRefreshAt ?? null}
+              intervalMs={Math.max(30, pollIntervalSec) * 1000}
+              onRefresh={onRefresh}
+              loading={loading}
+            />
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onRefresh}
+              disabled={loading}
+              aria-label="Refresh"
+              className="text-muted-foreground hover:text-foreground size-8"
+            >
+              <RefreshCw className={cn("size-4", loading && "animate-spin")} />
+            </Button>
+          )}
         </header>
 
         {error && (

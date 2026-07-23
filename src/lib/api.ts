@@ -27,6 +27,14 @@ export const api = {
   listSent: (limit = 50) =>
     invoke<ListResponse<SentEmail>>("list_sent", { limit }),
   getSent: (id: string) => invoke<SentEmail>("get_sent", { id }),
+
+  // Background inbox poller (runs in Rust, independent of the webview).
+  startPoller: (intervalSecs: number) =>
+    invoke<void>("start_poller", { intervalSecs }),
+  stopPoller: () => invoke<void>("stop_poller"),
+  setPollInterval: (intervalSecs: number) =>
+    invoke<void>("set_poll_interval", { intervalSecs }),
+  pollNow: () => invoke<void>("poll_now"),
 };
 
 /** Normalize an invoke rejection (always a string from our commands) to a message. */

@@ -1,4 +1,4 @@
-import { Mail, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { ApiKeyForm } from "@/components/ApiKeyForm";
 import {
@@ -18,9 +18,11 @@ export function Onboarding({ onConfigured }: Props) {
     <div className="bg-muted/30 flex h-full items-center justify-center p-6">
       <Card className="w-full max-w-md">
         <CardHeader className="items-center text-center">
-          <div className="bg-primary text-primary-foreground mx-auto mb-2 flex size-11 items-center justify-center rounded-xl">
-            <Mail className="size-5" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="Resender"
+            className="mx-auto mb-2 size-14 rounded-2xl"
+          />
           <CardTitle className="text-xl">Welcome to Resender</CardTitle>
           <CardDescription>
             Connect your Resend account to read and send email.

@@ -95,11 +95,13 @@ function App() {
               emails={received.emails}
               loading={received.loading}
               error={received.error}
-              onRefresh={() => void received.refresh()}
+              onRefresh={received.refreshNow}
               fetchFull={(id) => api.getReceived(id)}
               unreadIds={received.unreadIds}
               onOpen={received.markRead}
               onReply={startReply}
+              nextRefreshAt={received.nextRefreshAt}
+              pollIntervalSec={pollSec}
             />
           ) : view === "sent" ? (
             <MailboxView
