@@ -1,0 +1,209 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.625rem;
+
+  --background: oklch(0.994 0 0);
+  --foreground: oklch(0.185 0.004 285);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.185 0.004 285);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.185 0.004 285);
+  --primary: oklch(0.21 0.006 285);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0.002 285);
+  --secondary-foreground: oklch(0.21 0.006 285);
+  --muted: oklch(0.968 0.002 285);
+  --muted-foreground: oklch(0.505 0.009 285);
+  --accent: oklch(0.966 0.004 285);
+  --accent-foreground: oklch(0.21 0.006 285);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.916 0.004 285);
+  --input: oklch(0.916 0.004 285);
+  --ring: oklch(0.55 0.16 264);
+
+  /* Restrained brand accent, used sparingly (unread, active nav, links). */
+  --brand: oklch(0.545 0.175 264);
+  --brand-foreground: oklch(0.985 0 0);
+
+  --sidebar: oklch(0.982 0.002 285);
+  --sidebar-foreground: oklch(0.37 0.006 285);
+  --sidebar-primary: oklch(0.21 0.006 285);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.955 0.004 285);
+  --sidebar-accent-foreground: oklch(0.21 0.006 285);
+  --sidebar-border: oklch(0.915 0.004 285);
+  --sidebar-ring: oklch(0.55 0.16 264);
+
+  /* Soft, layered elevation. */
+  --shadow-2xs: 0 1px 2px 0 oklch(0 0 0 / 0.04);
+  --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px 0 oklch(0 0 0 / 0.06), 0 1px 2px -1px oklch(0 0 0 / 0.06);
+  --shadow-md: 0 2px 4px -1px oklch(0 0 0 / 0.06),
+    0 4px 14px -3px oklch(0 0 0 / 0.09);
+  --shadow-lg: 0 8px 26px -6px oklch(0 0 0 / 0.12),
+    0 2px 6px -2px oklch(0 0 0 / 0.06);
+  --shadow-xl: 0 16px 40px -10px oklch(0 0 0 / 0.16);
+}
+
+.dark {
+  --background: oklch(0.186 0.005 285);
+  --foreground: oklch(0.97 0 0);
+  --card: oklch(0.214 0.006 285);
+  --card-foreground: oklch(0.97 0 0);
+  --popover: oklch(0.214 0.006 285);
+  --popover-foreground: oklch(0.97 0 0);
+  --primary: oklch(0.92 0 0);
+  --primary-foreground: oklch(0.21 0.006 285);
+  --secondary: oklch(0.272 0.006 285);
+  --secondary-foreground: oklch(0.97 0 0);
+  --muted: oklch(0.272 0.006 285);
+  --muted-foreground: oklch(0.715 0.008 286);
+  --accent: oklch(0.285 0.007 286);
+  --accent-foreground: oklch(0.97 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 13%);
+  --ring: oklch(0.62 0.16 264);
+
+  --brand: oklch(0.68 0.155 264);
+  --brand-foreground: oklch(0.98 0 0);
+
+  --sidebar: oklch(0.164 0.005 285);
+  --sidebar-foreground: oklch(0.72 0.01 286);
+  --sidebar-primary: oklch(0.92 0 0);
+  --sidebar-primary-foreground: oklch(0.21 0.006 285);
+  --sidebar-accent: oklch(0.262 0.006 285);
+  --sidebar-accent-foreground: oklch(0.97 0 0);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.62 0.16 264);
+
+  --shadow-2xs: 0 1px 2px 0 oklch(0 0 0 / 0.28);
+  --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.32);
+  --shadow-sm: 0 1px 3px 0 oklch(0 0 0 / 0.4), 0 1px 2px -1px oklch(0 0 0 / 0.4);
+  --shadow-md: 0 2px 6px -1px oklch(0 0 0 / 0.45),
+    0 6px 18px -4px oklch(0 0 0 / 0.5);
+  --shadow-lg: 0 10px 30px -8px oklch(0 0 0 / 0.55),
+    0 3px 8px -3px oklch(0 0 0 / 0.4);
+  --shadow-xl: 0 20px 48px -12px oklch(0 0 0 / 0.6);
+}
+
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system,
+    "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo",
+    "Cascadia Code", "Roboto Mono", monospace;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-background text-foreground;
+    overflow: hidden;
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  /* Crisper, tighter headings — the Swiss/Linear signature. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    letter-spacing: -0.014em;
+  }
+
+  /* Thin, unobtrusive native scrollbars (iframe bodies, number inputs, etc.). */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: color-mix(in oklch, var(--foreground) 18%, transparent);
+    border: 3px solid transparent;
+    border-radius: 9999px;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in oklch, var(--foreground) 30%, transparent);
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* WKWebView adds a native key/credentials accessory on password inputs that
+     overlaps (and intercepts clicks meant for) our custom show/hide button. */
+  input::-webkit-credentials-auto-fill-button,
+  input::-webkit-strong-password-auto-fill-button,
+  input::-webkit-contacts-auto-fill-button,
+  input::-webkit-caps-lock-indicator {
+    display: none !important;
+    visibility: hidden;
+    pointer-events: none;
+    width: 0;
+    height: 0;
+    margin: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
