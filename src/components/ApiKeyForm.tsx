@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Eye, EyeOff, Loader2, KeyRound } from "lucide-react";
+import { Eye, EyeOff, Loader2, KeyRound, Save } from "lucide-react";
 import { toast } from "sonner";
 import { api, errMessage } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 interface Props {
   onSaved: () => void;
   submitLabel?: string;
+  iconOnly?: boolean;
   /** Prefill the field with the currently stored key (so the eye reveals it). */
   loadExisting?: boolean;
 }
@@ -17,6 +18,7 @@ export function ApiKeyForm({
   onSaved,
   submitLabel = "Save & connect",
   loadExisting = false,
+  iconOnly = false,
 }: Props) {
   const [key, setKey] = useState("");
   const [show, setShow] = useState(false);
@@ -80,6 +82,7 @@ export function ApiKeyForm({
               onClick={() => setShow((s) => !s)}
               className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2.5 z-10 flex size-6 -translate-y-1/2 items-center justify-center rounded-sm cursor-pointer"
               aria-label={show ? "Hide key" : "Show key"}
+              title={show ? "Hide key" : "Show key"}
             >
               {show ? (
                 <EyeOff className="size-4" />
@@ -88,9 +91,22 @@ export function ApiKeyForm({
               )}
             </button>
           </div>
-          <Button onClick={save} disabled={saving}>
-            {saving && <Loader2 className="size-4 animate-spin" />}
-            {submitLabel}
+          <Button
+            onClick={save}
+            disabled={saving}
+            size={iconOnly ? "icon" : "default"}
+            aria-label={saving ? "Saving API key" : submitLabel}
+            title={iconOnly ? submitLabel : undefined}
+          >
+            {saving ? (
+              <Loader2
+                aria-hidden="true"
+                className="size-4 motion-safe:animate-spin"
+              />
+            ) : iconOnly ? (
+              <Save aria-hidden="true" className="size-4" />
+            ) : null}
+            {!iconOnly && submitLabel}
           </Button>
         </div>
       </div>
