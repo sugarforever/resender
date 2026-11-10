@@ -1,5 +1,6 @@
 import type { Mail } from "./types";
 import { toDate } from "./format";
+import { EMAIL_FONT_FAMILY } from "./email-document";
 
 export function quotedOriginal(mail: Mail): {
   attribution: string;
@@ -52,6 +53,6 @@ export function buildReplyBody(
       .split("\n")
       .map((line) => `> ${line}`)
       .join("\n")}`,
-    html: `<div style="white-space:pre-wrap">${escapeHtml(text)}</div><br><div>${escapeHtml(quote.attribution)}</div><blockquote style="margin:0 0 0 0.8em;border-left:2px solid #ccc;padding-left:1em;white-space:pre-wrap">${escapeHtml(quote.content)}</blockquote>`,
+    html: `<div style="font-family:${escapeHtml(EMAIL_FONT_FAMILY)};font-size:14px;line-height:1.6"><div style="white-space:pre-wrap">${escapeHtml(text)}</div><br><div>${escapeHtml(quote.attribution)}</div><blockquote style="margin:0 0 0 0.8em;border-left:2px solid #ccc;padding-left:1em;white-space:pre-wrap">${escapeHtml(quote.content)}</blockquote></div>`,
   };
 }

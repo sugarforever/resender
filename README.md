@@ -93,6 +93,23 @@ email has no Message-ID, the app warns that the recipient may see a separate
 conversation. Switching conversations or leaving the mailbox discards an unsent
 inline draft; drafts are not saved.
 
+## Email fonts and multipart messages
+
+The UI uses an Inter/system sans-serif stack; Inter is not bundled, so the
+available system font is used when it is not installed. Plain-text emails use
+the UI font. HTML emails stay in a script-sandboxed iframe with matching
+sans-serif defaults (14px, 1.6 line height). Sender-defined fonts, styles, and
+monospace code blocks are preserved. Outgoing replies explicitly set the same
+font stack so quoted content does not fall back to a browser's serif default.
+
+Resend supplies decoded HTML, text, and attachment fields, so Resender does not
+parse raw MIME boundaries in the reader. For multipart alternatives, **Formatted**
+shows HTML and **Plain text** shows the text part when both are available. Empty
+HTML falls back to text. Attachments remain separate from the body. Inline images
+embedded by Resend are preserved; unresolved `cid:` images show a notice. Fetching
+and resolving these remaining inline resources is not implemented.
+See [Resend's received-email response](https://resend.com/docs/api-reference/emails/retrieve-received-email).
+
 ## Delivery status
 
 Outgoing messages show a delivery-status icon beside the message header. Hover

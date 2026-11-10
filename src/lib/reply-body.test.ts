@@ -21,6 +21,7 @@ it("sends the new message first and quotes the original underneath in text and H
     body.html.indexOf("How are you?"),
   );
   expect(body.html).toContain("&lt;person@example.com&gt;");
+  expect(body.html).toContain("font-family:");
 });
 
 it("quotes readable HTML-only emails without copying scripts, active markup, or tracking images", () => {

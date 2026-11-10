@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, Reply, Paperclip } from "lucide-react";
 import { ReplyEditor } from "./ReplyEditor";
 import { DeliveryStatus } from "./DeliveryStatus";
+import { EmailBody } from "./EmailBody";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import {
@@ -220,18 +221,11 @@ function MessageCard({
                   ))}
                 </div>
               ) : null}
-              {display.html?.trim() ? (
-                <iframe
-                  sandbox=""
-                  title="Email content"
-                  className="h-80 w-full resize-y border-y bg-white"
-                  srcDoc={display.html}
-                />
-              ) : (
-                <pre className="border-t p-4 font-sans text-sm leading-relaxed break-words whitespace-pre-wrap">
-                  {display.text || "This email has no content to display."}
-                </pre>
-              )}
+              <EmailBody
+                html={display.html}
+                text={display.text}
+                htmlFormat={display.html_format}
+              />
               <div className="flex justify-end p-3">
                 <Button
                   variant="outline"

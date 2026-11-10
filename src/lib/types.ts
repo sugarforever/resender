@@ -1,4 +1,6 @@
 export interface Attachment {
+  content_disposition?: "inline" | "attachment" | null;
+  content_id?: string | null;
   id: string;
   filename: string;
   content_type: string;
@@ -20,6 +22,7 @@ export interface Domain {
 
 /** A received (inbound) email as returned by the list endpoint. */
 export interface ReceivedEmail {
+  html_format?: "data_uri" | "cid";
   headers?: Record<string, string>;
   id: string;
   from: string;
@@ -32,8 +35,8 @@ export interface ReceivedEmail {
   message_id?: string;
   attachments?: Attachment[];
   // Present only when fetched individually:
-  html?: string;
-  text?: string;
+  html?: string | null;
+  text?: string | null;
 }
 
 /** A sent email as returned by the list endpoint. */
@@ -47,8 +50,8 @@ export interface SentEmail {
   created_at: string;
   last_event?: string;
   // Present only when fetched individually:
-  html?: string;
-  text?: string;
+  html?: string | null;
+  text?: string | null;
 }
 
 /**
@@ -56,6 +59,7 @@ export interface SentEmail {
  * Both {@link ReceivedEmail} and {@link SentEmail} are assignable to it.
  */
 export interface Mail {
+  html_format?: "data_uri" | "cid";
   message_id?: string;
   headers?: Record<string, string>;
   reply_to?: string[];
@@ -67,8 +71,8 @@ export interface Mail {
   created_at: string;
   last_event?: string;
   attachments?: Attachment[];
-  html?: string;
-  text?: string;
+  html?: string | null;
+  text?: string | null;
 }
 
 export interface SendEmailInput {
