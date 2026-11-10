@@ -43,9 +43,7 @@ export function Sidebar({
         aria-label="Sender identity — open Settings"
         title={defaultFrom || "Set your default sender in Settings"}
       >
-        <span className="bg-brand text-white flex size-7 shrink-0 items-center justify-center rounded-md">
-          <Send className="size-4" />
-        </span>
+        <img src="/logo.png" alt="" className="size-7 shrink-0 rounded-md" />
         <span className="sidebar-identity-copy min-w-0 flex-1">
           <span className="text-foreground block text-sm font-semibold">
             Resender

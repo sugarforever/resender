@@ -35,7 +35,7 @@ const statuses: Record<
     icon: Send,
     label: "Sent",
     description: "Sent by Resend; delivery is not confirmed yet.",
-    color: "text-blue-600 dark:text-blue-400",
+    color: "text-brand-text",
   },
   delivered: {
     icon: CheckCheck,

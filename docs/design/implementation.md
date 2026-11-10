@@ -8,7 +8,7 @@ The private Claude Design artifact and submitted requirements are linked in [the
 
 ## Implementation
 
-- `src/design-tokens.css`: blue accent, neutral light/dark palettes, typography and semantic tokens. `src/index.css` maps the app's sidebar tokens and defines responsive layout/component rules.
+- `src/design-tokens.css`: logo-inspired orange accent, neutral light/dark palettes, typography and semantic tokens. `src/index.css` maps the app's sidebar tokens and defines responsive layout/component rules.
 - `Sidebar` and `ConnectedDomains`: compact sender identity, primary navigation, status icons, informational domains and a domain popover in the compact rail. A single domain component handles both layouts.
 - `MailboxView`: compact rows, loading skeletons, retained-content errors, history footer, keyboard navigation, pointer/keyboard divider, Back-to-list focus restoration, and newly sent message selection. Compose replaces the reader while keeping the list on wide windows.
 - `ConversationView`, `EmailBody`, `DeliveryStatus`, `ReplyEditor`: folded one-line previews, circular middle count with no adjacent separator, bordered open messages, readable body spacing, visible expanded delivery labels, compact reply and bottom send toolbar.
