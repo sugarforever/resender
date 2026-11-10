@@ -99,7 +99,9 @@ Outgoing messages show a delivery-status icon beside the message header. Hover
 over it for an explanation: a spinner means queued, a paper plane means
 sent (delivery not confirmed), and double checks mean delivered to the recipient's
 mail server. Failures, bounces, and delays have distinct icons. Pending states
-refresh every 10 seconds; other sent-mail events refresh every minute. Animations
+refresh every 10 seconds; other sent-mail events refresh every minute. Returning
+to the app or clicking Refresh also syncs delivery status immediately. Refresh
+errors are shown in the mailbox instead of silently leaving a stale status. Animations
 respect the system's reduced-motion preference. Status icons also have accessible
 labels for screen readers. See [Resend's email events](https://resend.com/docs/dashboard/emails/manage-emails#understand-email-events).
 

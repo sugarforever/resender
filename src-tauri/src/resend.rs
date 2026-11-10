@@ -22,7 +22,12 @@ pub(crate) async fn request_with_key(
     body: Option<Value>,
 ) -> Result<Value, String> {
     let url = format!("{BASE_URL}{path}");
+    let is_read = method == Method::GET;
     let mut req = client().request(method, &url).bearer_auth(key);
+    if is_read {
+        // A stalled status read must not keep the frontend's refresh guard locked.
+        req = req.timeout(std::time::Duration::from_secs(20));
+    }
     if let Some(b) = body {
         req = req.json(&b);
     }

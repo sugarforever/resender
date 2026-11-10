@@ -73,10 +73,6 @@ function ConnectedApp({
   const sent = useSent(true);
 
   const threads = useConversations(received.emails, sent.emails);
-  const refreshSent = sent.refresh;
-  useEffect(() => {
-    void refreshSent();
-  }, [refreshSent]);
   const handleSent = (mail: ThreadMessage) => {
     threads.addSent(mail);
     void sent.refresh();
@@ -112,8 +108,16 @@ function ConnectedApp({
               onRetryIndex={threads.retry}
               onSent={handleSent}
               loading={received.loading}
-              error={received.error}
-              onRefresh={received.refreshNow}
+              error={
+                received.error ||
+                (sent.error
+                  ? `Delivery status could not sync: ${sent.error}`
+                  : null)
+              }
+              onRefresh={() => {
+                received.refreshNow();
+                void sent.refresh();
+              }}
               fetchFull={threads.fetchFull}
               unreadIds={received.unreadIds}
               onOpen={received.markRead}
