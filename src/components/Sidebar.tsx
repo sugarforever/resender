@@ -1,13 +1,21 @@
-import { Inbox, Send, PenSquare, Settings, Moon, Sun } from "lucide-react";
+import { useState } from "react";
+import {
+  Inbox,
+  Send,
+  PenSquare,
+  Settings,
+  Moon,
+  Sun,
+  Globe,
+  ChevronDown,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Theme } from "@/lib/prefs";
 import { parseAddress } from "@/lib/format";
 import { ConnectedDomains } from "@/components/ConnectedDomains";
 
 export type View = "inbox" | "sent" | "compose" | "settings";
-
 interface Props {
   view: View;
   onChange: (v: View) => void;
@@ -17,11 +25,6 @@ interface Props {
   defaultFrom: string;
 }
 
-const NAV: { id: View; label: string; icon: typeof Inbox }[] = [
-  { id: "inbox", label: "Inbox", icon: Inbox },
-  { id: "sent", label: "Sent", icon: Send },
-];
-
 export function Sidebar({
   view,
   onChange,
@@ -30,83 +33,99 @@ export function Sidebar({
   onToggleTheme,
   defaultFrom,
 }: Props) {
+  const [domainsOpen, setDomainsOpen] = useState(false);
   const { email } = parseAddress(defaultFrom);
-  const domain = email.includes("@") ? email.slice(email.lastIndexOf("@") + 1) : "";
   return (
-    <aside className="bg-sidebar text-sidebar-foreground border-sidebar-border flex w-60 shrink-0 flex-col border-r">
-      <div className="flex h-14 items-center gap-2.5 px-4">
-        <img
-          src="/logo.png"
-          alt="Resender"
-          className="size-7 rounded-lg shadow-sm"
-        />
-        <span className="text-foreground text-[15px] font-semibold tracking-tight">
-          Resender
-        </span>
-      </div>
-
-      <ConnectedDomains />
-
+    <aside className="app-sidebar bg-sidebar text-sidebar-foreground flex shrink-0 flex-col border-r">
       <button
+        className="sidebar-brand flex w-full items-center gap-2.5 px-4 py-5 text-left"
         onClick={() => onChange("settings")}
-        className="hover:bg-sidebar-accent mx-3 mb-3 rounded-lg border border-sidebar-border p-3 text-left cursor-pointer"
         aria-label="Sender identity — open Settings"
+        title={defaultFrom || "Set your default sender in Settings"}
       >
-        <span className="text-muted-foreground block text-[10px] font-semibold uppercase tracking-wider">Default sender</span>
-        <span className="mt-1 block truncate text-sm font-medium" title={domain || undefined}>
-          {domain || "No sender configured"}
+        <span className="bg-brand text-white flex size-7 shrink-0 items-center justify-center rounded-md">
+          <Send className="size-4" />
         </span>
-        <span className="text-muted-foreground mt-0.5 block truncate text-xs" title={email || undefined}>
-          {email || "Set your email in Settings"}
+        <span className="sidebar-identity-copy min-w-0 flex-1">
+          <span className="text-foreground block text-sm font-semibold">
+            Resender
+          </span>
+          <span className="text-muted-foreground block truncate text-[11px]">
+            {email || "Set default sender"}
+          </span>
         </span>
-        <span className="text-muted-foreground mt-2 block text-[11px] leading-relaxed">
-          Mailboxes show all mail available to your API key.
-        </span>
+        <ChevronDown className="sidebar-label size-3 text-muted-foreground" />
       </button>
-
-      <div className="px-3 pt-1 pb-2">
-        <Button
-          onClick={() => onChange("compose")}
-          className="w-full justify-start gap-2 shadow-sm"
-        >
-          <PenSquare className="size-4" />
-          Compose
-        </Button>
-      </div>
-
-      <nav className="flex flex-1 flex-col gap-0.5 px-3">
-        {NAV.map(({ id, label, icon: Icon }) => (
-          <NavItem
+      <Button
+        variant="outline"
+        onClick={() => onChange("compose")}
+        aria-label="Compose"
+        title="Compose"
+        className="sidebar-compose mx-3 mb-4 justify-start gap-2.5 border-input text-[13px] shadow-none"
+      >
+        <PenSquare className="size-4 text-brand" />
+        <span className="sidebar-label">Compose</span>
+      </Button>
+      <nav
+        aria-label="Mailboxes"
+        className="sidebar-nav flex flex-col gap-0.5 px-3"
+      >
+        {(
+          [
+            { id: "inbox", label: "Inbox", icon: Inbox },
+            { id: "sent", label: "Sent", icon: Send },
+            { id: "settings", label: "Settings", icon: Settings },
+          ] as const
+        ).map(({ id, label, icon: Icon }) => (
+          <button
             key={id}
-            active={view === id}
             onClick={() => onChange(id)}
-            icon={Icon}
-            label={label}
-            trailing={
-              id === "inbox" && unreadCount > 0 ? (
-                <Badge className="bg-brand text-brand-foreground h-5 min-w-5 justify-center rounded-full px-1.5 text-[11px] tabular-nums shadow-none">
-                  {unreadCount}
-                </Badge>
-              ) : undefined
-            }
-          />
+            aria-label={label}
+            title={label}
+            aria-current={view === id ? "page" : undefined}
+            className={cn(
+              "relative flex h-9 items-center gap-2.5 rounded-md px-3 text-[13px] transition-colors",
+              view === id
+                ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
+                : "hover:bg-muted",
+            )}
+          >
+            <Icon className="size-4 shrink-0" />
+            <span className="sidebar-label flex-1 text-left">{label}</span>
+            {id === "inbox" && unreadCount > 0 && (
+              <span className="sidebar-unread text-xs font-semibold tabular-nums">
+                {unreadCount}
+              </span>
+            )}
+          </button>
         ))}
       </nav>
-
-      <div className="flex items-center gap-1 px-3 pb-3">
-        <NavItem
-          active={view === "settings"}
-          onClick={() => onChange("settings")}
-          icon={Settings}
-          label="Settings"
-          className="flex-1"
-        />
+      <div className="sidebar-domains relative mt-6" data-open={domainsOpen}>
+        <button
+          className="domain-trigger hidden size-9 items-center justify-center rounded-md hover:bg-muted"
+          aria-label="Connected domains"
+          title="Connected domains"
+          aria-expanded={domainsOpen}
+          onClick={() => setDomainsOpen(!domainsOpen)}
+        >
+          <Globe className="size-4" />
+        </button>
+        <div className="sidebar-domain-content">
+          <ConnectedDomains />
+        </div>
+      </div>
+      <div className="sidebar-footer mt-auto flex items-center justify-between gap-2 border-t px-4 py-3">
+        <span className="sidebar-caption flex items-center gap-2 text-[11px] text-muted-foreground">
+          <span className="size-1.5 rounded-full bg-ok" />
+          Connected
+        </span>
         <Button
           variant="ghost"
           size="icon"
           onClick={onToggleTheme}
           aria-label="Toggle theme"
-          className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground shrink-0"
+          title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+          className="size-8 text-muted-foreground"
         >
           {theme === "dark" ? (
             <Sun className="size-4" />
@@ -116,49 +135,5 @@ export function Sidebar({
         </Button>
       </div>
     </aside>
-  );
-}
-
-function NavItem({
-  active,
-  onClick,
-  icon: Icon,
-  label,
-  trailing,
-  className,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: typeof Inbox;
-  label: string;
-  trailing?: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "group relative flex h-9 items-center gap-2.5 rounded-md px-3 text-sm font-medium transition-colors duration-150 cursor-pointer",
-        active
-          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-          : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
-        className
-      )}
-    >
-      <span
-        className={cn(
-          "bg-brand absolute top-1/2 left-0 h-4 w-[3px] -translate-y-1/2 rounded-r-full transition-opacity duration-150",
-          active ? "opacity-100" : "opacity-0"
-        )}
-      />
-      <Icon
-        className={cn(
-          "size-4 transition-colors",
-          active ? "text-brand" : "text-current"
-        )}
-      />
-      <span className="flex-1 text-left">{label}</span>
-      {trailing}
-    </button>
   );
 }

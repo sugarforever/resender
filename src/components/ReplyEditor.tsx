@@ -153,7 +153,7 @@ export function ReplyEditor({
         </div>
       )}
       <div className="max-h-[55vh] min-h-0 overflow-y-auto">
-        <div className="focus-within:ring-brand/40 focus-within:ring-2 focus-within:ring-inset">
+        <div className="reply-writing-area">
           <Label className="sr-only" htmlFor={`${id}-body`}>
             Message
           </Label>
@@ -170,7 +170,7 @@ export function ReplyEditor({
             }}
             placeholder="Write your reply…"
             disabled={sending}
-            className="min-h-36 w-full resize-y rounded-none border-0 bg-transparent px-4 py-3 shadow-none focus-visible:ring-0"
+            className="min-h-[148px] text-[15px] leading-6 w-full resize-y rounded-none border-0 bg-transparent px-4 py-3 shadow-none focus-visible:ring-0"
           />
         </div>
         <div className="mx-4 border-t py-3">
@@ -204,7 +204,7 @@ export function ReplyEditor({
           {error}
         </p>
       )}
-      <footer className="flex shrink-0 items-center justify-between border-t px-4 py-3">
+      <footer className="flex shrink-0 items-center gap-3 border-t bg-muted/20 px-4 py-3">
         <Button onClick={() => void send()} disabled={sending} size="sm">
           {sending ? (
             <Loader2 className="size-4 animate-spin" />
@@ -213,6 +213,9 @@ export function ReplyEditor({
           )}
           {sending ? "Sending…" : "Send"}
         </Button>
+        <span className="text-muted-foreground mr-auto text-[11px]">
+          ⌘↵ / Ctrl+Enter
+        </span>
         <Button
           variant="ghost"
           size="icon"

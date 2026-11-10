@@ -15,13 +15,13 @@ interface Props {
 
 export function Onboarding({ onConfigured }: Props) {
   return (
-    <div className="bg-muted/30 flex h-full items-center justify-center p-6">
-      <Card className="w-full max-w-md">
+    <div className="bg-sidebar flex h-full items-center justify-center p-6">
+      <Card className="w-full max-w-[460px] gap-5 border-border py-8 shadow-none">
         <CardHeader className="items-center text-center">
           <img
             src="/logo.png"
             alt="Resender"
-            className="mx-auto mb-2 size-14 rounded-2xl"
+            className="mx-auto mb-3 size-10 rounded-xl"
           />
           <CardTitle className="text-xl">Welcome to Resender</CardTitle>
           <CardDescription>

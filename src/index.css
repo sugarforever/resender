@@ -1,101 +1,29 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./design-tokens.css";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.625rem;
-
-  --background: oklch(0.994 0 0);
-  --foreground: oklch(0.185 0.004 285);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.185 0.004 285);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.185 0.004 285);
-  --primary: oklch(0.21 0.006 285);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0.002 285);
-  --secondary-foreground: oklch(0.21 0.006 285);
-  --muted: oklch(0.968 0.002 285);
-  --muted-foreground: oklch(0.505 0.009 285);
-  --accent: oklch(0.966 0.004 285);
-  --accent-foreground: oklch(0.21 0.006 285);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.916 0.004 285);
-  --input: oklch(0.916 0.004 285);
-  --ring: oklch(0.64 0.16 45);
-
-  /* Warm brand accent, used sparingly (unread, active nav, links). */
-  --brand: oklch(0.63 0.19 40);
-  --brand-foreground: oklch(0.985 0 0);
-
-  --sidebar: oklch(0.982 0.002 285);
-  --sidebar-foreground: oklch(0.37 0.006 285);
-  --sidebar-primary: oklch(0.21 0.006 285);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.955 0.004 285);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285);
-  --sidebar-border: oklch(0.915 0.004 285);
-  --sidebar-ring: oklch(0.64 0.16 45);
-
-  /* Soft, layered elevation. */
-  --shadow-2xs: 0 1px 2px 0 oklch(0 0 0 / 0.04);
-  --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.05);
-  --shadow-sm: 0 1px 3px 0 oklch(0 0 0 / 0.06), 0 1px 2px -1px oklch(0 0 0 / 0.06);
-  --shadow-md: 0 2px 4px -1px oklch(0 0 0 / 0.06),
-    0 4px 14px -3px oklch(0 0 0 / 0.09);
-  --shadow-lg: 0 8px 26px -6px oklch(0 0 0 / 0.12),
-    0 2px 6px -2px oklch(0 0 0 / 0.06);
-  --shadow-xl: 0 16px 40px -10px oklch(0 0 0 / 0.16);
-}
-
-.dark {
-  --background: oklch(0.186 0.005 285);
-  --foreground: oklch(0.97 0 0);
-  --card: oklch(0.214 0.006 285);
-  --card-foreground: oklch(0.97 0 0);
-  --popover: oklch(0.214 0.006 285);
-  --popover-foreground: oklch(0.97 0 0);
-  --primary: oklch(0.92 0 0);
-  --primary-foreground: oklch(0.21 0.006 285);
-  --secondary: oklch(0.272 0.006 285);
-  --secondary-foreground: oklch(0.97 0 0);
-  --muted: oklch(0.272 0.006 285);
-  --muted-foreground: oklch(0.715 0.008 286);
-  --accent: oklch(0.285 0.007 286);
-  --accent-foreground: oklch(0.97 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 9%);
-  --input: oklch(1 0 0 / 13%);
-  --ring: oklch(0.68 0.16 45);
-
-  --brand: oklch(0.72 0.18 45);
-  --brand-foreground: oklch(0.98 0 0);
-
-  --sidebar: oklch(0.164 0.005 285);
-  --sidebar-foreground: oklch(0.72 0.01 286);
-  --sidebar-primary: oklch(0.92 0 0);
-  --sidebar-primary-foreground: oklch(0.21 0.006 285);
-  --sidebar-accent: oklch(0.262 0.006 285);
-  --sidebar-accent-foreground: oklch(0.97 0 0);
-  --sidebar-border: oklch(1 0 0 / 8%);
-  --sidebar-ring: oklch(0.68 0.16 45);
-
-  --shadow-2xs: 0 1px 2px 0 oklch(0 0 0 / 0.28);
-  --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.32);
-  --shadow-sm: 0 1px 3px 0 oklch(0 0 0 / 0.4), 0 1px 2px -1px oklch(0 0 0 / 0.4);
-  --shadow-md: 0 2px 6px -1px oklch(0 0 0 / 0.45),
-    0 6px 18px -4px oklch(0 0 0 / 0.5);
-  --shadow-lg: 0 10px 30px -8px oklch(0 0 0 / 0.55),
-    0 3px 8px -3px oklch(0 0 0 / 0.4);
-  --shadow-xl: 0 20px 48px -12px oklch(0 0 0 / 0.6);
+  --brand: var(--rs-accent);
+  --brand-foreground: var(--rs-accent-fg);
+  --sidebar: var(--rs-bg);
+  --sidebar-foreground: var(--rs-text-2);
+  --sidebar-primary: var(--rs-accent);
+  --sidebar-primary-foreground: var(--rs-accent-fg);
+  --sidebar-accent: var(--rs-selected);
+  --sidebar-accent-foreground: var(--rs-accent-text);
+  --sidebar-border: var(--rs-border);
+  --sidebar-ring: var(--rs-focus);
 }
 
 @theme inline {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system,
-    "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo",
-    "Cascadia Code", "Roboto Mono", monospace;
+  --font-sans:
+    "Inter", ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono:
+    ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", "Cascadia Code",
+    "Roboto Mono", monospace;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -206,4 +134,245 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* The app responds to its window, including when embedded in review previews. */
+.app-shell {
+  container-type: inline-size;
+  font-size: 13px;
+  line-height: 20px;
+}
+.app-sidebar {
+  width: 224px;
+}
+.reader-back {
+  display: none;
+}
+.conversation-content {
+  width: 100%;
+  max-width: 920px;
+  margin-inline: auto;
+  padding: 16px 28px;
+}
+.message-card[data-expanded="true"] {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-block: 8px 16px;
+  overflow: hidden;
+}
+.message-card[data-expanded="false"] .message-header {
+  display: grid;
+  grid-template-columns: 28px minmax(90px, 130px) minmax(0, 1fr) auto;
+  gap: 12px;
+  padding-block: 12px;
+}
+.message-card[data-expanded="false"] .message-identity {
+  display: contents;
+}
+.message-card[data-expanded="false"] .message-preview {
+  margin: 0;
+  font-size: 13px;
+}
+.message-card[data-expanded="true"] .message-header {
+  padding: 16px;
+  align-items: flex-start;
+}
+.message-card[data-expanded="true"] .message-body {
+  padding: 8px 20px 16px 56px;
+}
+.message-card .email-body {
+  border: 0;
+}
+.message-card .email-text {
+  padding: 0;
+  font-size: 15px;
+  line-height: 24px;
+  max-width: 72ch;
+}
+.message-card iframe {
+  border-radius: 4px;
+}
+.thread-count-row {
+  border: 0 !important;
+  padding: 4px 2px;
+}
+.reply-frame {
+  border-radius: 10px;
+  border: 1px solid var(--input);
+  margin-block: 12px;
+}
+.reply-frame:focus-within {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 1px var(--ring);
+}
+.compose-fields input {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding-inline: 0;
+  height: 38px;
+  background: transparent;
+}
+.compose-fields input:focus-visible {
+  box-shadow: none;
+  outline-offset: -2px;
+}
+.compose-fields .compose-field {
+  border-bottom: 1px solid var(--border);
+  padding: 4px 0;
+}
+.compose-fields label {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.settings-content [data-slot="card"] {
+  box-shadow: none;
+  border-radius: 8px;
+  gap: 16px;
+  padding-block: 20px;
+}
+.settings-content [data-slot="card-header"],
+.settings-content [data-slot="card-content"] {
+  padding-inline: 20px;
+}
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.mail-row:focus-visible,
+.message-header:focus-visible {
+  outline-offset: -2px;
+}
+@container (max-width: 1199px) {
+  .app-sidebar {
+    width: 196px;
+  }
+  .conversation-content {
+    padding: 14px 20px;
+  }
+  .message-card[data-expanded="false"] .message-header {
+    grid-template-columns: 28px minmax(70px, 100px) minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+}
+@container (max-width: 899px) {
+  .app-sidebar {
+    width: 56px;
+    align-items: center;
+  }
+  .sidebar-label,
+  .sidebar-domains-full,
+  .sidebar-caption,
+  .sidebar-identity-copy {
+    display: none;
+  }
+  .sidebar-brand {
+    padding: 16px 0;
+    justify-content: center;
+  }
+  .sidebar-compose {
+    margin: 4px 8px 16px;
+    padding: 0;
+    width: 36px;
+    height: 36px;
+  }
+  .sidebar-nav {
+    padding-inline: 8px;
+    width: 100%;
+  }
+  .sidebar-nav button,
+  .sidebar-footer button {
+    justify-content: center;
+    padding: 0;
+    width: 36px;
+  }
+  .sidebar-unread {
+    position: absolute;
+    right: -2px;
+    top: -3px;
+    font-size: 9px;
+    min-width: 14px;
+    height: 14px;
+    padding-inline: 2px;
+  }
+  .sidebar-footer {
+    flex-direction: column;
+    padding: 8px;
+    width: 100%;
+  }
+  .sidebar-domains-compact {
+    display: block;
+  }
+  .mail-list {
+    width: 100% !important;
+    max-width: none;
+    flex: 1;
+  }
+  .mail-reader,
+  .mail-divider {
+    display: none;
+  }
+  .mailbox[data-reading="true"] .mail-list {
+    display: none;
+  }
+  .mailbox[data-reading="true"] .mail-reader {
+    display: flex;
+  }
+  .reader-back {
+    display: flex;
+  }
+  .conversation-content {
+    padding: 12px 16px;
+  }
+  .message-card[data-expanded="true"] .message-body {
+    padding: 8px 16px 16px;
+  }
+  .message-card[data-expanded="false"] .message-header {
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    gap: 4px 10px;
+  }
+  .message-card[data-expanded="false"] .message-preview {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .message-card[data-expanded="false"] time {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+  .message-card[data-expanded="false"] .message-avatar {
+    grid-row: 1 / span 2;
+  }
+  .message-card[data-expanded="false"] .message-chevron {
+    display: none;
+  }
+}
+
+.message-chevron {
+  display: none;
+}
+@container (max-width: 899px) {
+  .domain-trigger {
+    display: flex;
+  }
+  .sidebar-domain-content {
+    display: none;
+  }
+  .sidebar-domains[data-open="true"] .sidebar-domain-content {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 48px;
+    z-index: 30;
+    width: 256px;
+    padding-block: 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--popover);
+    box-shadow: var(--rs-shadow-pop);
+  }
+}
+
+.reply-frame textarea:focus-visible {
+  outline: none;
+  box-shadow: none;
 }

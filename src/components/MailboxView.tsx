@@ -1,19 +1,20 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   Inbox as InboxIcon,
   Send as SendIcon,
   RefreshCw,
   AlertCircle,
   GripVertical,
+  ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  avatarStyle,
-  displayName,
-  initials,
-  joinAddresses,
-  shortDate,
-} from "@/lib/format";
+import { displayName, joinAddresses, shortDate } from "@/lib/format";
 import type { Conversation, ThreadMessage } from "@/lib/threads";
 import { ConversationView } from "./ConversationView";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,9 @@ const MIN_LIST_WIDTH = 260;
 const MIN_READING_WIDTH = 380;
 
 interface Props {
+  revealMessageId?: string;
+  composer?: ReactNode;
+  onCloseComposer?: () => void;
   kind: "inbox" | "sent";
   conversations: Conversation[];
   indexing: boolean;
@@ -42,6 +46,9 @@ interface Props {
 }
 
 export function MailboxView({
+  revealMessageId,
+  composer,
+  onCloseComposer,
   kind,
   conversations,
   indexing,
@@ -57,7 +64,27 @@ export function MailboxView({
   nextRefreshAt,
   pollIntervalSec,
 }: Props) {
+  const [reading, setReading] = useState(false);
+  const [restoreListFocus, setRestoreListFocus] = useState(false);
+  const activeRowRef = useRef<HTMLButtonElement | null>(null);
+  const backRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (restoreListFocus) {
+      activeRowRef.current?.focus();
+      setRestoreListFocus(false);
+    }
+  }, [restoreListFocus]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  useEffect(() => {
+    if (revealMessageId) {
+      setSelectedId(revealMessageId);
+      setReading(true);
+    }
+  }, [revealMessageId]);
+  useEffect(() => {
+    if (reading && backRef.current?.getClientRects().length)
+      backRef.current.focus();
+  }, [reading]);
   const direction = kind === "inbox" ? "received" : "sent";
   const threads = conversations.filter((thread) =>
     thread.messages.some((mail) => mail.direction === direction),
@@ -72,10 +99,28 @@ export function MailboxView({
   // Draggable list/detail splitter (self-contained, persisted).
   const groupRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef(false);
+  const [availableWidth, setAvailableWidth] = useState(1000);
+  const maxListWidth = Math.min(
+    560,
+    Math.max(MIN_LIST_WIDTH, availableWidth - MIN_READING_WIDTH),
+  );
+  useEffect(() => {
+    if (!groupRef.current) return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry.contentRect.width > 0)
+        setAvailableWidth(entry.contentRect.width);
+    });
+    observer.observe(groupRef.current);
+    return () => observer.disconnect();
+  }, []);
   const [listWidth, setListWidth] = useState(() => {
     const v = Number(localStorage.getItem(LIST_WIDTH_KEY));
-    return Number.isFinite(v) && v > 0 ? v : 340;
+    return Number.isFinite(v) && v > 0 ? Math.max(260, Math.min(560, v)) : 360;
   });
+
+  useEffect(() => {
+    setListWidth((current) => Math.min(current, maxListWidth));
+  }, [maxListWidth]);
 
   useEffect(() => {
     localStorage.setItem(LIST_WIDTH_KEY, String(Math.round(listWidth)));
@@ -95,7 +140,10 @@ export function MailboxView({
     if (!draggingRef.current) return;
     const rect = groupRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const max = Math.max(MIN_LIST_WIDTH, rect.width - MIN_READING_WIDTH);
+    const max = Math.min(
+      560,
+      Math.max(MIN_LIST_WIDTH, rect.width - MIN_READING_WIDTH),
+    );
     const next = Math.min(max, Math.max(MIN_LIST_WIDTH, e.clientX - rect.left));
     setListWidth(next);
   }, []);
@@ -115,6 +163,8 @@ export function MailboxView({
   }, [selectedThread, emails]);
 
   const selectRow = (id: string) => {
+    setReading(true);
+    onCloseComposer?.();
     const thread = threads.find((item) =>
       item.messages.some((mail) => mail.id === id),
     );
@@ -125,13 +175,17 @@ export function MailboxView({
   };
 
   return (
-    <div ref={groupRef} className="flex h-full min-h-0">
+    <div
+      ref={groupRef}
+      className="mailbox flex h-full min-h-0"
+      data-reading={reading || !!composer}
+    >
       {/* List column */}
       <div
-        className="bg-background flex h-full min-h-0 shrink-0 flex-col"
+        className="mail-list bg-background flex h-full min-h-0 shrink-0 flex-col"
         style={{ width: listWidth }}
       >
-        <header className="flex h-14 items-center justify-between px-4">
+        <header className="pane-header flex h-14 shrink-0 items-center justify-between border-b px-4">
           <div className="flex items-baseline gap-2">
             <h1 className="text-[15px] font-semibold capitalize">{kind}</h1>
             {emails.length > 0 && (
@@ -162,7 +216,10 @@ export function MailboxView({
         </header>
 
         {error && (
-          <div className="text-destructive bg-destructive/5 mx-3 mb-1 flex items-start gap-2 rounded-md px-3 py-2 text-xs">
+          <div
+            role="alert"
+            className="text-destructive bg-destructive/5 mx-3 mb-1 flex items-start gap-2 rounded-md px-3 py-2 text-xs"
+          >
             <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
             <span>{error}</span>
           </div>
@@ -192,11 +249,58 @@ export function MailboxView({
             )}
           </div>
         )}
-        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
+        <div
+          className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto"
+          aria-busy={loading}
+        >
+          {loading && emails.length === 0 && (
+            <div
+              role="status"
+              aria-label="Loading conversations"
+              className="space-y-5 p-4"
+            >
+              {Array.from({ length: 6 }, (_, i) => (
+                <div key={i} className="motion-safe:animate-pulse space-y-2">
+                  <div className="h-3 w-2/3 rounded bg-muted" />
+                  <div className="h-3 w-full rounded bg-muted" />
+                </div>
+              ))}
+            </div>
+          )}
           {emails.length === 0 && !loading && !error ? (
             <EmptyList kind={kind} />
           ) : (
-            <ul className="flex flex-col gap-0.5 p-2">
+            <ul
+              className="flex flex-col gap-0.5 p-1.5"
+              onKeyDown={(event) => {
+                if (
+                  !["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)
+                )
+                  return;
+                const rows = Array.from(
+                  event.currentTarget.querySelectorAll<HTMLButtonElement>(
+                    "li > button",
+                  ),
+                );
+                const current = rows.indexOf(
+                  document.activeElement as HTMLButtonElement,
+                );
+                const next =
+                  event.key === "Home"
+                    ? 0
+                    : event.key === "End"
+                      ? rows.length - 1
+                      : Math.max(
+                          0,
+                          Math.min(
+                            rows.length - 1,
+                            current + (event.key === "ArrowDown" ? 1 : -1),
+                          ),
+                        );
+                event.preventDefault();
+                rows[next]?.focus();
+              }}
+            >
               {emails.map((mail) => {
                 const thread = threads.find((item) =>
                   item.messages.some((message) => message.id === mail.id),
@@ -220,24 +324,16 @@ export function MailboxView({
                 return (
                   <li key={mail.id}>
                     <button
-                      onClick={() => selectRow(mail.id)}
+                      aria-current={selected ? "true" : undefined}
+                      onClick={(event) => {
+                        activeRowRef.current = event.currentTarget;
+                        selectRow(mail.id);
+                      }}
                       className={cn(
-                        "group relative flex w-full items-center gap-3 rounded-lg py-2.5 pr-3 pl-2.5 text-left transition-colors duration-150 cursor-pointer",
-                        selected ? "bg-accent" : "hover:bg-accent/55",
+                        "mail-row group relative flex w-full items-center gap-2 rounded-md px-3 py-3 text-left transition-colors duration-150 cursor-pointer",
+                        selected ? "bg-selected" : "hover:bg-accent/55",
                       )}
                     >
-                      <span
-                        className={cn(
-                          "bg-brand absolute top-1/2 left-0 h-5 w-[3px] -translate-y-1/2 rounded-r-full transition-opacity duration-150",
-                          selected ? "opacity-100" : "opacity-0",
-                        )}
-                      />
-                      <span
-                        className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
-                        style={avatarStyle(person)}
-                      >
-                        {initials(person)}
-                      </span>
                       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                         <span className="flex items-baseline gap-2">
                           <span
@@ -282,17 +378,45 @@ export function MailboxView({
             </ul>
           )}
         </div>
+        <footer className="border-t px-4 py-2.5 text-[11px] text-muted-foreground">
+          Latest 50 {kind === "inbox" ? "received" : "sent"} messages
+        </footer>
       </div>
 
       {/* Drag handle */}
       <div
         role="separator"
         aria-orientation="vertical"
+        aria-label="Resize conversation list"
+        aria-valuemin={260}
+        aria-valuemax={maxListWidth}
+        aria-valuenow={Math.round(listWidth)}
+        tabIndex={0}
+        onKeyDown={(event) => {
+          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key))
+            return;
+          event.preventDefault();
+          const width = groupRef.current?.getBoundingClientRect().width || 1000;
+          const max = Math.min(560, Math.max(260, width - MIN_READING_WIDTH));
+          setListWidth((current) =>
+            event.key === "Home"
+              ? 260
+              : event.key === "End"
+                ? max
+                : Math.max(
+                    260,
+                    Math.min(
+                      max,
+                      current + (event.key === "ArrowRight" ? 16 : -16),
+                    ),
+                  ),
+          );
+        }}
         onPointerDown={onHandleDown}
         onPointerMove={onHandleMove}
         onPointerUp={onHandleUp}
         style={{ touchAction: "none" }}
-        className="group bg-border hover:bg-brand/50 relative w-px shrink-0 cursor-col-resize transition-colors"
+        className="mail-divider group bg-border hover:bg-brand/50 relative w-px shrink-0 cursor-col-resize transition-colors"
       >
         {/* Widened, invisible hit area for easy grabbing. */}
         <span className="absolute inset-y-0 -left-1.5 -right-1.5 z-10" />
@@ -302,8 +426,23 @@ export function MailboxView({
       </div>
 
       {/* Reading pane */}
-      <div className="bg-card flex h-full min-h-0 min-w-0 flex-1 flex-col">
-        {!selectedThread ? (
+      <div className="mail-reader bg-card flex h-full min-h-0 min-w-0 flex-1 flex-col">
+        <button
+          ref={backRef}
+          className="reader-back items-center gap-2 border-b px-4 py-2 text-sm text-muted-foreground"
+          aria-label="Back to conversation list"
+          onClick={() => {
+            setReading(false);
+            onCloseComposer?.();
+            setRestoreListFocus(true);
+          }}
+        >
+          <ArrowLeft className="size-4" />
+          {kind === "inbox" ? "Inbox" : "Sent"}
+        </button>
+        {composer ? (
+          composer
+        ) : !selectedThread ? (
           <EmptyReading kind={kind} />
         ) : (
           <ConversationView

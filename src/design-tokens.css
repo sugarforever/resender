@@ -1,0 +1,183 @@
+/* Resender — Desktop Mail · design tokens for Tailwind 4 + shadcn/ui
+   Import once in src/index.css:  @import "tailwindcss"; @import "./resender-tokens.css";
+   Theme switch: set class="dark" on <html> (persisted by the app, not by the OS). */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --rs-bg: #f6f6f7;
+  --rs-surface: #ffffff;
+  --rs-surface-2: #f1f1f3;
+  --rs-surface-3: #e8e8eb;
+  --rs-selected: #e3eafb;
+  --rs-border: #e4e4e7;
+  --rs-border-strong: #d1d1d6;
+  --rs-text: #18181b;
+  --rs-text-2: #4f4f57;
+  --rs-text-3: #64646c;
+  --rs-accent: #2b57c9;
+  --rs-accent-hover: #2449ad;
+  --rs-accent-fg: #ffffff;
+  --rs-accent-soft: #eaf0fd;
+  --rs-accent-text: #2249b0;
+  --rs-focus: #2b57c9;
+  --rs-success: #17784c;
+  --rs-success-soft: #e5f3eb;
+  --rs-warning: #935700;
+  --rs-warning-soft: #fbf0db;
+  --rs-danger: #be2830;
+  --rs-danger-soft: #fbeaeb;
+  --rs-danger-solid: #be2830;
+  --rs-overlay: rgba(16, 16, 20, 0.4);
+  --rs-shadow-pop:
+    0 1px 2px rgba(16, 16, 20, 0.06), 0 8px 24px rgba(16, 16, 20, 0.12);
+
+  /* shadcn/ui semantic aliases */
+  --background: var(--rs-surface);
+  --foreground: var(--rs-text);
+  --card: var(--rs-surface);
+  --card-foreground: var(--rs-text);
+  --popover: var(--rs-surface);
+  --popover-foreground: var(--rs-text);
+  --primary: var(--rs-accent);
+  --primary-foreground: var(--rs-accent-fg);
+  --secondary: var(--rs-surface-2);
+  --secondary-foreground: var(--rs-text);
+  --muted: var(--rs-surface-2);
+  --muted-foreground: var(--rs-text-3);
+  --accent: var(
+    --rs-surface-2
+  ); /* shadcn "accent" = hover surface, not brand */
+  --accent-foreground: var(--rs-text);
+  --destructive: var(--rs-danger);
+  --border: var(--rs-border);
+  --input: var(--rs-border-strong);
+  --ring: var(--rs-focus);
+  --radius: 6px;
+}
+
+.dark {
+  --rs-bg: #0f0f11;
+  --rs-surface: #17171a;
+  --rs-surface-2: #1f1f23;
+  --rs-surface-3: #28282d;
+  --rs-selected: #1e2a48;
+  --rs-border: #2a2a30;
+  --rs-border-strong: #3a3a41;
+  --rs-text: #ececef;
+  --rs-text-2: #b3b3bb;
+  --rs-text-3: #93939c;
+  --rs-accent: #3d68dd;
+  --rs-accent-hover: #4a75ea;
+  --rs-accent-fg: #ffffff;
+  --rs-accent-soft: #1b2643;
+  --rs-accent-text: #93b0ff;
+  --rs-focus: #7fa0ff;
+  --rs-success: #4bc58c;
+  --rs-success-soft: #10291c;
+  --rs-warning: #e3a43f;
+  --rs-warning-soft: #2d2111;
+  --rs-danger: #f27a80;
+  --rs-danger-soft: #341719;
+  --rs-danger-solid: #c8323a;
+  --rs-overlay: rgba(0, 0, 0, 0.6);
+  --rs-shadow-pop: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans:
+    "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    sans-serif;
+  --font-mono:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --color-bg: var(--rs-bg);
+  --color-surface: var(--rs-surface);
+  --color-surface-2: var(--rs-surface-2);
+  --color-surface-3: var(--rs-surface-3);
+  --color-selected: var(--rs-selected);
+  --color-line: var(--rs-border);
+  --color-line-strong: var(--rs-border-strong);
+  --color-fg: var(--rs-text);
+  --color-fg-2: var(--rs-text-2);
+  --color-fg-3: var(--rs-text-3);
+  --color-brand: var(--rs-accent);
+  --color-brand-hover: var(--rs-accent-hover);
+  --color-brand-fg: var(--rs-accent-fg);
+  --color-brand-soft: var(--rs-accent-soft);
+  --color-brand-text: var(--rs-accent-text);
+  --color-focus: var(--rs-focus);
+  --color-ok: var(--rs-success);
+  --color-ok-soft: var(--rs-success-soft);
+  --color-warn: var(--rs-warning);
+  --color-warn-soft: var(--rs-warning-soft);
+  --color-bad: var(--rs-danger);
+  --color-bad-soft: var(--rs-danger-soft);
+  --color-bad-solid: var(--rs-danger-solid);
+
+  /* shadcn color utilities */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* type scale: text-micro / caption / ui / plain / pane / body / subject / display */
+  --text-micro: 11px;
+  --text-micro--line-height: 16px;
+  --text-caption: 12px;
+  --text-caption--line-height: 16px;
+  --text-ui: 13px;
+  --text-ui--line-height: 20px;
+  --text-plain: 14px;
+  --text-plain--line-height: 22px;
+  --text-pane: 15px;
+  --text-pane--line-height: 22px;
+  --text-body: 15px;
+  --text-body--line-height: 24px;
+  --text-subject: 18px;
+  --text-subject--line-height: 26px;
+  --text-display: 20px;
+  --text-display--line-height: 28px;
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+
+  --shadow-pop: var(--rs-shadow-pop);
+  --spacing: 4px; /* Tailwind multiplier: p-2 = 8px, gap-3 = 12px … */
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 20px;
+    color: var(--rs-text);
+    background: var(--rs-bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--rs-focus);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

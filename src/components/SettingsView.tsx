@@ -71,7 +71,9 @@ export function SettingsView({
     setDisconnecting(true);
     try {
       await api.deleteApiKey();
-      toast.success("Disconnected. Your API key was removed from the keychain.");
+      toast.success(
+        "Disconnected. Your API key was removed from the keychain.",
+      );
       onDisconnected();
     } catch (e) {
       toast.error("Couldn't disconnect", { description: errMessage(e) });
@@ -82,13 +84,13 @@ export function SettingsView({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="flex h-14 items-center px-6">
-        <h1 className="text-sm font-semibold">Settings</h1>
+      <header className="flex h-14 shrink-0 items-center px-6">
+        <h1 className="text-[15px] font-semibold">Settings</h1>
       </header>
       <Separator />
 
       <ScrollArea className="min-h-0 flex-1">
-        <div className="mx-auto flex max-w-2xl flex-col gap-6 p-6">
+        <div className="settings-content mx-auto flex max-w-[728px] flex-col gap-4 p-6">
           {/* Account / API key */}
           <Card>
             <CardHeader>
