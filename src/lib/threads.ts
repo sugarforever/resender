@@ -91,13 +91,13 @@ export function createReplyDraft(
   mail: ThreadMessage,
   defaultFrom: string,
 ): ReplyDraft {
-  const parent = messageId(mail);
-  const references = [
-    ...new Set([
-      ...messageIds(header(mail, "references") || header(mail, "in-reply-to")),
-      ...(parent ? [parent] : []),
-    ]),
-  ];
+  const inherited = messageIds(
+    header(mail, "references") || header(mail, "in-reply-to"),
+  );
+  // Sent detail responses may omit their own Message-ID. Keep the reply in
+  // the known conversation by replying to its most recent verified ancestor.
+  const parent = messageId(mail) || inherited[inherited.length - 1];
+  const references = [...new Set([...inherited, ...(parent ? [parent] : [])])];
   return {
     from:
       defaultFrom ||

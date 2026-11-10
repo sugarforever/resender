@@ -112,6 +112,32 @@ describe("reply draft", () => {
     });
   });
 
+  it("keeps consecutive replies linked when sent mail has no Message-ID", () => {
+    const original = message("original");
+    const first = message("first-reply", {
+      direction: "sent",
+      message_id: undefined,
+      headers: createReplyDraft(original, "").headers,
+      created_at: "2026-11-10T09:01:00Z",
+    });
+    const second = message("second-reply", {
+      direction: "sent",
+      message_id: undefined,
+      headers: createReplyDraft(first, "").headers,
+      created_at: "2026-11-10T09:02:00Z",
+    });
+    expect(second.headers).toEqual({
+      "In-Reply-To": original.message_id,
+      References: original.message_id,
+    });
+    expect(buildConversations([original, first, second])).toHaveLength(1);
+    expect(
+      buildConversations([original, first, second])[0].messages.map(
+        (mail) => mail.id,
+      ),
+    ).toEqual(["original", "first-reply", "second-reply"]);
+  });
+
   it("does not fabricate headers from Resend's opaque API id", () => {
     expect(
       createReplyDraft(message("uuid", { message_id: undefined }), "").headers,
