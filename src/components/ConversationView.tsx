@@ -7,11 +7,11 @@ import { EmailBody } from "./EmailBody";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import {
-  avatarStyle,
   displayName,
   fullDate,
   initials,
   joinAddresses,
+  shortDate,
 } from "@/lib/format";
 import { messageId } from "@/lib/threads";
 import { errMessage } from "@/lib/api";
@@ -40,17 +40,17 @@ export function ConversationView({
   const last = conversation.messages[conversation.messages.length - 1];
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="shrink-0 border-b px-6 py-4">
+      <header className="flex shrink-0 items-baseline gap-3 border-b px-6 py-4">
         <h2 className="text-xl font-semibold">
           {conversation.messages[0].subject || "(no subject)"}
         </h2>
-        <p className="text-muted-foreground mt-1 text-xs">
+        <p className="text-muted-foreground text-xs">
           {conversation.messages.length}{" "}
           {conversation.messages.length === 1 ? "message" : "messages"}
         </p>
       </header>
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
-        <div className="space-y-3">
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-1">
+        <div className="divide-border/60 divide-y">
           {conversation.messages.map((mail) => {
             const key = `${mail.direction}:${mail.id}`;
             return (
@@ -83,7 +83,7 @@ export function ConversationView({
           {replyTarget && (
             <div
               ref={composerRef}
-              className="overflow-hidden rounded-xl border bg-background"
+              className="my-4 overflow-hidden rounded-lg border bg-background"
             >
               {!messageId(replyTarget) && (
                 <p className="text-muted-foreground px-6 pt-4 text-xs">
@@ -154,40 +154,46 @@ function MessageCard({
     headers: { ...mail.headers, ...full?.headers },
   };
   return (
-    <article className="overflow-hidden rounded-xl border bg-background">
+    <article>
       <div className="flex items-center">
         <button
           type="button"
           onClick={onToggle}
           aria-expanded={expanded}
           aria-label={`${expanded ? "Collapse" : "Expand"} message from ${display.from}`}
-          className="hover:bg-accent/40 flex min-w-0 flex-1 items-center gap-3 p-4 text-left cursor-pointer"
+          className="hover:bg-accent/30 focus-visible:outline-ring flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left focus-visible:outline-2 focus-visible:outline-offset-[-2px] cursor-pointer"
         >
-          <span
-            className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
-            style={avatarStyle(display.from)}
-          >
+          <span className="bg-muted text-muted-foreground flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-medium">
             {initials(display.from)}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-semibold">
+            <span className="block truncate text-sm font-medium">
               {displayName(display.from)}
             </span>
-            <span className="text-muted-foreground block truncate text-xs">
-              To {joinAddresses(display.to)}
-            </span>
-            <span className="text-muted-foreground block text-[11px]">
-              {fullDate(display.created_at)}
-            </span>
+            {expanded && (
+              <span className="text-muted-foreground mt-0.5 block truncate text-xs">
+                To {joinAddresses(display.to)}
+              </span>
+            )}
           </span>
+          <time
+            dateTime={display.created_at}
+            title={fullDate(display.created_at)}
+            className="text-muted-foreground shrink-0 text-[11px] tabular-nums"
+          >
+            {shortDate(display.created_at)}
+          </time>
           {expanded ? (
-            <ChevronDown className="size-4 shrink-0" />
+            <ChevronDown className="text-muted-foreground size-3.5 shrink-0" />
           ) : (
-            <ChevronRight className="size-4 shrink-0" />
+            <ChevronRight className="text-muted-foreground size-3.5 shrink-0" />
           )}
         </button>
         {mail.direction === "sent" && (
           <DeliveryStatus event={display.last_event} />
+        )}
+        {mail.direction === "received" && (
+          <span aria-hidden="true" className="mr-2 size-6 shrink-0" />
         )}
       </div>
       {expanded && (
@@ -228,7 +234,7 @@ function MessageCard({
               />
               <div className="flex justify-end p-3">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   disabled={replyDisabled}
                   onClick={() => onReply(display)}

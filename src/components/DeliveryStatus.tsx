@@ -118,7 +118,7 @@ export function DeliveryStatus({ event }: { event?: string }) {
       aria-label={explanation}
       title={explanation}
       tabIndex={0}
-      className={`mr-4 inline-flex size-7 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${state.color}`}
+      className={`mr-2 inline-flex size-6 shrink-0 items-center justify-center rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${state.color}`}
     >
       <Icon aria-hidden="true" className={`size-4 ${state.animation ?? ""}`} />
     </span>
