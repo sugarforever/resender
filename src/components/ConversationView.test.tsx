@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -210,6 +210,60 @@ describe("conversation reading and replying", () => {
       }),
     );
     expect(screen.queryByLabelText("Reply composer")).toBeNull();
+  });
+
+  it("replies twice immediately to the same recipient using the latest sent body and ancestry", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.sendEmail)
+      .mockClear()
+      .mockResolvedValueOnce({ id: "first-followup" })
+      .mockResolvedValueOnce({ id: "second-followup" });
+    function Thread() {
+      const [messages, setMessages] = useState<ThreadMessage[]>([original]);
+      return (
+        <ConversationView
+          conversation={{ id: "consecutive", messages }}
+          fetchFull={fetchFull}
+          onSent={(mail) => setMessages((current) => [...current, mail])}
+        />
+      );
+    }
+    render(<Thread />);
+    await screen.findByText("How are you?");
+    await user.click(screen.getByRole("button", { name: "Reply" }));
+    await user.type(screen.getByLabelText("Message"), "See you at the beach.");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() =>
+      expect(screen.queryByLabelText("Reply composer")).toBeNull(),
+    );
+    await user.click(await screen.findByRole("button", { name: "Reply" }));
+    expect(
+      screen.getByLabelText("Quoted original message").textContent,
+    ).toContain("See you at the beach.");
+    await user.click(
+      screen.getByRole("button", { name: "Edit reply details" }),
+    );
+    expect(screen.getByLabelText("To")).toHaveProperty(
+      "value",
+      "person@example.com",
+    );
+    await user.type(
+      screen.getByLabelText("Message"),
+      "Please read this in advance.",
+    );
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(api.sendEmail).toHaveBeenCalledTimes(2));
+    expect(vi.mocked(api.sendEmail).mock.calls[1][0]).toMatchObject({
+      to: ["person@example.com"],
+      text: expect.stringContaining("> See you at the beach."),
+      headers: {
+        "In-Reply-To": original.message_id,
+        References: original.message_id,
+      },
+    });
+    expect(vi.mocked(api.sendEmail).mock.calls[1][0].text).toContain(
+      "Please read this in advance.",
+    );
   });
 
   it("preserves a failed reply draft and lets the user cancel it", async () => {
