@@ -57,6 +57,42 @@ const conversation: Conversation = {
 const fetchFull = async (mail: ThreadMessage) => mail;
 
 describe("conversation reading and replying", () => {
+  it("keeps the latest message open and packs middle messages into an expandable count", async () => {
+    const user = userEvent.setup();
+    const messages = Array.from({ length: 5 }, (_, index) => ({
+      ...original,
+      id: `packed-${index}`,
+      text: `Body ${index}`,
+      created_at: `2026-11-10T09:0${index}:00Z`,
+    }));
+    render(
+      <ConversationView
+        conversation={{ id: "packed", messages }}
+        fetchFull={fetchFull}
+        onSent={vi.fn()}
+      />,
+    );
+    expect(await screen.findByText("Body 4")).toBeTruthy();
+    expect(screen.queryByText("Body 1")).toBeNull();
+    expect(
+      screen
+        .getByRole("button", { name: "Show 2 earlier messages" })
+        .getAttribute("aria-expanded"),
+    ).toBe("false");
+    expect(
+      screen.queryByRole("button", { name: /Collapse message from/ }),
+    ).toBeNull();
+    await user.click(
+      screen.getByRole("button", { name: "Show 2 earlier messages" }),
+    );
+    expect(await screen.findByText("Body 1")).toBeTruthy();
+    expect(await screen.findByText("Body 2")).toBeTruthy();
+    await user.click(
+      screen.getByRole("button", { name: "Hide 2 earlier messages" }),
+    );
+    expect(screen.queryByText("Body 1")).toBeNull();
+    expect(screen.getByText("Body 4")).toBeTruthy();
+  });
   it("collapses older messages and expands them on demand", async () => {
     const user = userEvent.setup();
     render(
@@ -91,13 +127,7 @@ describe("conversation reading and replying", () => {
     await user.click(screen.getByRole("button", { name: "Reply" }));
     expect(screen.queryByLabelText("From")).toBeNull();
     expect(screen.queryByLabelText("Subject")).toBeNull();
-    expect(
-      screen
-        .getByRole("button", {
-          name: /expand message from person@example.com/i,
-        })
-        .getAttribute("aria-expanded"),
-    ).toBe("false");
+    expect(screen.queryByRole("button", { name: "Reply" })).toBeNull();
     expect(screen.getByLabelText("Message")).toBe(document.activeElement);
     expect(
       screen.getByLabelText("Quoted original message").textContent,

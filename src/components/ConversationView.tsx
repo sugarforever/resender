@@ -1,5 +1,5 @@
 import type { Conversation, ThreadMessage } from "@/lib/threads";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, Reply, Paperclip } from "lucide-react";
 import { ReplyEditor } from "./ReplyEditor";
 import { DeliveryStatus } from "./DeliveryStatus";
@@ -29,6 +29,8 @@ export function ConversationView({
 }: ConversationProps) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [replyTarget, setReplyTarget] = useState<ThreadMessage | null>(null);
+  const [middleOpen, setMiddleOpen] = useState(false);
+  const middleId = useId();
   const composerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (replyTarget)
@@ -38,6 +40,38 @@ export function ConversationView({
       });
   }, [replyTarget]);
   const last = conversation.messages[conversation.messages.length - 1];
+  const middle = conversation.messages.slice(1, -2);
+  const renderMessage = (mail: ThreadMessage, grouped = false) => {
+    const key = `${mail.direction}:${mail.id}`;
+    const isExpanded =
+      mail === last
+        ? !replyTarget
+        : (expanded[key] ?? (grouped && !replyTarget));
+    return (
+      <MessageCard
+        key={key}
+        mail={mail}
+        expanded={isExpanded}
+        canCollapse={mail !== last}
+        fetchFull={fetchFull}
+        onToggle={() =>
+          setExpanded((current) => ({ ...current, [key]: !isExpanded }))
+        }
+        onReply={(target) => {
+          setExpanded(
+            Object.fromEntries(
+              conversation.messages.map((message) => [
+                `${message.direction}:${message.id}`,
+                false,
+              ]),
+            ),
+          );
+          setReplyTarget(target);
+        }}
+        replyDisabled={!!replyTarget}
+      />
+    );
+  };
   return (
     <div className="flex h-full min-h-0 flex-col">
       <header className="flex shrink-0 items-baseline gap-3 border-b px-6 py-4">
@@ -51,35 +85,36 @@ export function ConversationView({
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-1">
         <div className="divide-border/60 divide-y">
-          {conversation.messages.map((mail) => {
-            const key = `${mail.direction}:${mail.id}`;
-            return (
-              <MessageCard
-                key={key}
-                mail={mail}
-                expanded={expanded[key] ?? (mail === last && !replyTarget)}
-                fetchFull={fetchFull}
-                onToggle={() =>
-                  setExpanded((current) => ({
-                    ...current,
-                    [key]: !(current[key] ?? (mail === last && !replyTarget)),
-                  }))
-                }
-                onReply={(mail) => {
-                  setExpanded(
-                    Object.fromEntries(
-                      conversation.messages.map((message) => [
-                        `${message.direction}:${message.id}`,
-                        false,
-                      ]),
-                    ),
-                  );
-                  setReplyTarget(mail);
-                }}
-                replyDisabled={!!replyTarget}
-              />
-            );
-          })}
+          {middle.length > 0 ? (
+            <>
+              {renderMessage(conversation.messages[0])}
+              <div>
+                <button
+                  type="button"
+                  aria-label={`${middleOpen ? "Hide" : "Show"} ${middle.length} earlier ${middle.length === 1 ? "message" : "messages"}`}
+                  aria-expanded={middleOpen}
+                  aria-controls={middleId}
+                  onClick={() => setMiddleOpen((open) => !open)}
+                  className="text-muted-foreground hover:text-foreground focus-visible:outline-ring flex w-full cursor-pointer items-center gap-3 px-2 py-2 text-xs focus-visible:outline-2"
+                >
+                  <span className="bg-background flex size-7 shrink-0 items-center justify-center rounded-full border font-medium">
+                    {middle.length}
+                  </span>
+                  <span className="bg-border/60 h-px flex-1" />
+                  {middleOpen && <span>Hide earlier messages</span>}
+                </button>
+                <div id={middleId} className="divide-border/60 divide-y">
+                  {middleOpen &&
+                    middle.map((mail) => renderMessage(mail, true))}
+                </div>
+              </div>
+              {conversation.messages
+                .slice(-2)
+                .map((mail) => renderMessage(mail))}
+            </>
+          ) : (
+            conversation.messages.map((mail) => renderMessage(mail))
+          )}
           {replyTarget && (
             <div
               ref={composerRef}
@@ -119,9 +154,11 @@ function MessageCard({
   onToggle,
   onReply,
   replyDisabled,
+  canCollapse,
 }: {
   mail: ThreadMessage;
   expanded: boolean;
+  canCollapse: boolean;
   fetchFull: ConversationProps["fetchFull"];
   onToggle: () => void;
   onReply: (mail: ThreadMessage) => void;
@@ -153,15 +190,20 @@ function MessageCard({
     last_event: mail.last_event ?? full?.last_event,
     headers: { ...mail.headers, ...full?.headers },
   };
+  const Header = canCollapse ? "button" : "div";
   return (
     <article>
       <div className="flex items-center">
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-expanded={expanded}
-          aria-label={`${expanded ? "Collapse" : "Expand"} message from ${display.from}`}
-          className="hover:bg-accent/30 focus-visible:outline-ring flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left focus-visible:outline-2 focus-visible:outline-offset-[-2px] cursor-pointer"
+        <Header
+          type={canCollapse ? "button" : undefined}
+          onClick={canCollapse ? onToggle : undefined}
+          aria-expanded={canCollapse ? expanded : undefined}
+          aria-label={
+            canCollapse
+              ? `${expanded ? "Collapse" : "Expand"} message from ${display.from}`
+              : undefined
+          }
+          className="hover:bg-accent/30 focus-visible:outline-ring flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
         >
           <span className="bg-muted text-muted-foreground flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-medium">
             {initials(display.from)}
@@ -183,12 +225,13 @@ function MessageCard({
           >
             {shortDate(display.created_at)}
           </time>
-          {expanded ? (
-            <ChevronDown className="text-muted-foreground size-3.5 shrink-0" />
-          ) : (
-            <ChevronRight className="text-muted-foreground size-3.5 shrink-0" />
-          )}
-        </button>
+          {canCollapse &&
+            (expanded ? (
+              <ChevronDown className="text-muted-foreground size-3.5 shrink-0" />
+            ) : (
+              <ChevronRight className="text-muted-foreground size-3.5 shrink-0" />
+            ))}
+        </Header>
         {mail.direction === "sent" && (
           <DeliveryStatus event={display.last_event} />
         )}
