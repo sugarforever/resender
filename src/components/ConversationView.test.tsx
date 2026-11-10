@@ -87,11 +87,48 @@ describe("conversation reading and replying", () => {
     );
     expect(await screen.findByText("Body 1")).toBeTruthy();
     expect(await screen.findByText("Body 2")).toBeTruthy();
-    await user.click(
-      screen.getByRole("button", { name: "Hide 2 earlier messages" }),
-    );
-    expect(screen.queryByText("Body 1")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Show 2 earlier messages" }),
+    ).toBeNull();
+    expect(
+      screen.getAllByRole("button", { name: /Expand message from/ }),
+    ).toHaveLength(4);
+    expect(
+      screen.queryByRole("button", { name: /Collapse message from/ }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Hide 2 earlier messages" }),
+    ).toBeNull();
     expect(screen.getByText("Body 4")).toBeTruthy();
+  });
+  it("shows only the first readable line in folded HTML and text messages", async () => {
+    render(
+      <ConversationView
+        conversation={{
+          id: "preview-lines",
+          messages: [
+            {
+              ...original,
+              id: "text-preview",
+              text: "\n First text line\nSecond text line",
+            },
+            {
+              ...original,
+              id: "html-preview",
+              text: null,
+              html: "<style>hidden</style><p>First HTML line</p><p>Second HTML line</p>",
+            },
+            response,
+          ],
+        }}
+        fetchFull={fetchFull}
+        onSent={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("First text line")).toBeTruthy();
+    expect(screen.getByText("First HTML line")).toBeTruthy();
+    expect(screen.queryByText("Second text line")).toBeNull();
+    expect(screen.queryByText("Second HTML line")).toBeNull();
   });
   it("collapses older messages and expands them on demand", async () => {
     const user = userEvent.setup();
@@ -103,7 +140,7 @@ describe("conversation reading and replying", () => {
       />,
     );
     await screen.findByText("Doing well!");
-    expect(screen.queryByText("How are you?")).toBeNull();
+    expect(screen.getByText("How are you?")).toBeTruthy();
     await user.click(
       screen.getByRole("button", {
         name: /expand message from person@example.com/i,
@@ -143,7 +180,9 @@ describe("conversation reading and replying", () => {
       "value",
       "me@mydomain.com",
     );
-    expect(screen.getByText("How are you?")).toBeTruthy();
+    expect(
+      screen.getByLabelText("Quoted original message").textContent,
+    ).toContain("How are you?");
     await user.type(screen.getByLabelText("Message"), "I'm fine, thanks.");
     await user.click(screen.getByRole("button", { name: "Send" }));
     await waitFor(() =>

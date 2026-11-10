@@ -1,6 +1,12 @@
 import type { Conversation, ThreadMessage } from "@/lib/threads";
 import { useEffect, useId, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, Reply, Paperclip } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  ChevronRight,
+  Reply,
+  Paperclip,
+} from "lucide-react";
 import { ReplyEditor } from "./ReplyEditor";
 import { DeliveryStatus } from "./DeliveryStatus";
 import { EmailBody } from "./EmailBody";
@@ -14,6 +20,7 @@ import {
   shortDate,
 } from "@/lib/format";
 import { messageId } from "@/lib/threads";
+import { quotedOriginal } from "@/lib/reply-body";
 import { errMessage } from "@/lib/api";
 
 export interface ConversationProps {
@@ -41,12 +48,9 @@ export function ConversationView({
   }, [replyTarget]);
   const last = conversation.messages[conversation.messages.length - 1];
   const middle = conversation.messages.slice(1, -2);
-  const renderMessage = (mail: ThreadMessage, grouped = false) => {
+  const renderMessage = (mail: ThreadMessage) => {
     const key = `${mail.direction}:${mail.id}`;
-    const isExpanded =
-      mail === last
-        ? !replyTarget
-        : (expanded[key] ?? (grouped && !replyTarget));
+    const isExpanded = mail === last ? !replyTarget : (expanded[key] ?? false);
     return (
       <MessageCard
         key={key}
@@ -89,23 +93,31 @@ export function ConversationView({
             <>
               {renderMessage(conversation.messages[0])}
               <div>
-                <button
-                  type="button"
-                  aria-label={`${middleOpen ? "Hide" : "Show"} ${middle.length} earlier ${middle.length === 1 ? "message" : "messages"}`}
-                  aria-expanded={middleOpen}
-                  aria-controls={middleId}
-                  onClick={() => setMiddleOpen((open) => !open)}
-                  className="text-muted-foreground hover:text-foreground focus-visible:outline-ring flex w-full cursor-pointer items-center gap-3 px-2 py-2 text-xs focus-visible:outline-2"
-                >
-                  <span className="bg-background flex size-7 shrink-0 items-center justify-center rounded-full border font-medium">
-                    {middle.length}
-                  </span>
-                  <span className="bg-border/60 h-px flex-1" />
-                  {middleOpen && <span>Hide earlier messages</span>}
-                </button>
+                {!middleOpen && (
+                  <div className="px-2 py-2">
+                    <button
+                      type="button"
+                      aria-label={`Show ${middle.length} earlier ${middle.length === 1 ? "message" : "messages"}`}
+                      aria-expanded={false}
+                      aria-controls={middleId}
+                      onClick={() => setMiddleOpen(true)}
+                      className="group text-muted-foreground hover:bg-muted focus-visible:bg-muted focus-visible:outline-ring relative flex size-8 cursor-pointer items-center justify-center rounded-full border text-xs font-medium focus-visible:outline-2"
+                    >
+                      <span className="group-hover:hidden group-focus-visible:hidden">
+                        {middle.length}
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className="hidden flex-col items-center group-hover:flex group-focus-visible:flex"
+                      >
+                        <ChevronUp className="size-3.5" />
+                        <ChevronDown className="-mt-1 size-3.5" />
+                      </span>
+                    </button>
+                  </div>
+                )}
                 <div id={middleId} className="divide-border/60 divide-y">
-                  {middleOpen &&
-                    middle.map((mail) => renderMessage(mail, true))}
+                  {middleOpen && middle.map((mail) => renderMessage(mail))}
                 </div>
               </div>
               {conversation.messages
@@ -215,6 +227,17 @@ function MessageCard({
             {expanded && (
               <span className="text-muted-foreground mt-0.5 block truncate text-xs">
                 To {joinAddresses(display.to)}
+              </span>
+            )}
+            {!expanded && (
+              <span className="text-muted-foreground mt-0.5 block truncate text-xs">
+                {(
+                  display.text?.trim() ||
+                  (display.html ? quotedOriginal(display).content : "")
+                )
+                  .split(/\r?\n/)
+                  .find((line) => line.trim())
+                  ?.trim()}
               </span>
             )}
           </span>
