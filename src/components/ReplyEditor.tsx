@@ -81,7 +81,7 @@ export function ReplyEditor({
         toast.warning(
           "Email sent, but its conversation link could not be saved on this device.",
         );
-      toast.success("Reply sent");
+      toast.success("Reply submitted to Resend");
       onSent({
         id: result.id,
         direction: "sent",

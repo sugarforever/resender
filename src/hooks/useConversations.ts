@@ -58,6 +58,7 @@ export function useConversations(received: ReceivedEmail[], sent: SentEmail[]) {
     return {
       ...mail,
       ...full,
+      last_event: mail.last_event ?? full?.last_event,
       headers: {
         ...mail.headers,
         ...full?.headers,

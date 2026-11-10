@@ -246,4 +246,31 @@ describe("conversation reading and replying", () => {
       "Keep my text",
     );
   });
+
+  it("updates outgoing status from fresh summaries rather than the cached message body", async () => {
+    const queued = { ...response, last_event: "queued" };
+    const fetchQueued = async () => queued;
+    const { rerender } = render(
+      <ConversationView
+        conversation={{ id: "status", messages: [queued] }}
+        fetchFull={fetchQueued}
+        onSent={vi.fn()}
+      />,
+    );
+    await screen.findByText("Doing well!");
+    expect(screen.getByRole("img", { name: /Queued/ })).toBeTruthy();
+    expect(screen.queryByText(/· Sent/)).toBeNull();
+    rerender(
+      <ConversationView
+        conversation={{
+          id: "status",
+          messages: [{ ...queued, last_event: "delivered" }],
+        }}
+        fetchFull={fetchQueued}
+        onSent={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("img", { name: /Delivered/ })).toBeTruthy();
+    expect(screen.queryByRole("img", { name: /Queued/ })).toBeNull();
+  });
 });

@@ -71,3 +71,29 @@ it("hydrates correctly under StrictMode and groups an optimistic reply before se
   expect(result.current.conversations).toHaveLength(1);
   expect(result.current.conversations[0].messages).toHaveLength(2);
 });
+
+it("uses the latest delivery event from refreshed summaries without discarding cached bodies", async () => {
+  const queued: SentEmail = {
+    id: "status",
+    from: "me@example.com",
+    to: ["person@example.com"],
+    created_at: "2026-11-10T09:01:00Z",
+    last_event: "queued",
+  };
+  vi.mocked(api.getSent).mockResolvedValue({ ...queued, text: "Cached body" });
+  const inbox: ReceivedEmail[] = [];
+  const { result, rerender } = renderHook(
+    ({ sent }) => useConversations(inbox, sent),
+    { initialProps: { sent: [queued] } },
+  );
+  await waitFor(() =>
+    expect(result.current.conversations[0].messages[0].text).toBe(
+      "Cached body",
+    ),
+  );
+  rerender({ sent: [{ ...queued, last_event: "delivered" }] });
+  expect(result.current.conversations[0].messages[0]).toMatchObject({
+    text: "Cached body",
+    last_event: "delivered",
+  });
+});

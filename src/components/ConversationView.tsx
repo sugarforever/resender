@@ -2,6 +2,7 @@ import type { Conversation, ThreadMessage } from "@/lib/threads";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, Reply, Paperclip } from "lucide-react";
 import { ReplyEditor } from "./ReplyEditor";
+import { DeliveryStatus } from "./DeliveryStatus";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import {
@@ -148,41 +149,46 @@ function MessageCard({
   const display = {
     ...mail,
     ...full,
+    last_event: mail.last_event ?? full?.last_event,
     headers: { ...mail.headers, ...full?.headers },
   };
   return (
     <article className="overflow-hidden rounded-xl border bg-background">
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={expanded}
-        aria-label={`${expanded ? "Collapse" : "Expand"} message from ${display.from}`}
-        className="hover:bg-accent/40 flex w-full items-center gap-3 p-4 text-left cursor-pointer"
-      >
-        <span
-          className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
-          style={avatarStyle(display.from)}
+      <div className="flex items-center">
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          aria-label={`${expanded ? "Collapse" : "Expand"} message from ${display.from}`}
+          className="hover:bg-accent/40 flex min-w-0 flex-1 items-center gap-3 p-4 text-left cursor-pointer"
         >
-          {initials(display.from)}
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-semibold">
-            {displayName(display.from)}
-            {mail.direction === "sent" ? " · Sent" : ""}
+          <span
+            className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+            style={avatarStyle(display.from)}
+          >
+            {initials(display.from)}
           </span>
-          <span className="text-muted-foreground block truncate text-xs">
-            To {joinAddresses(display.to)}
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-semibold">
+              {displayName(display.from)}
+            </span>
+            <span className="text-muted-foreground block truncate text-xs">
+              To {joinAddresses(display.to)}
+            </span>
+            <span className="text-muted-foreground block text-[11px]">
+              {fullDate(display.created_at)}
+            </span>
           </span>
-          <span className="text-muted-foreground block text-[11px]">
-            {fullDate(display.created_at)}
-          </span>
-        </span>
-        {expanded ? (
-          <ChevronDown className="size-4 shrink-0" />
-        ) : (
-          <ChevronRight className="size-4 shrink-0" />
+          {expanded ? (
+            <ChevronDown className="size-4 shrink-0" />
+          ) : (
+            <ChevronRight className="size-4 shrink-0" />
+          )}
+        </button>
+        {mail.direction === "sent" && (
+          <DeliveryStatus event={display.last_event} />
         )}
-      </button>
+      </div>
       {expanded && (
         <>
           {error ? (
@@ -204,13 +210,8 @@ function MessageCard({
             </p>
           ) : (
             <>
-              {display.last_event || display.attachments?.length ? (
+              {display.attachments?.length ? (
                 <div className="flex flex-wrap gap-2 px-4 pb-3">
-                  {display.last_event && (
-                    <Badge variant="secondary">
-                      {display.last_event.replace(/_/g, " ")}
-                    </Badge>
-                  )}
                   {display.attachments?.map((attachment) => (
                     <Badge key={attachment.id} variant="outline">
                       <Paperclip className="mr-1 size-3" />

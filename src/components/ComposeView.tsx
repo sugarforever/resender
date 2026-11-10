@@ -61,7 +61,7 @@ export function ComposeView({ onSent }: Props) {
         subject: subject.trim(),
         text: body,
       });
-      toast.success("Email sent", { description: `Message id: ${res.id}` });
+      toast.success("Email submitted to Resend", { description: `Message id: ${res.id}` });
       // Reset, but keep the sender for the next message.
       setTo("");
       setCc("");
