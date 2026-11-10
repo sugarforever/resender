@@ -61,7 +61,7 @@ it("keeps the selected conversation and draft when a new reply changes the list 
     created_at: "2026-11-10T09:01:00Z",
   };
   rerender(view([original, newer]));
-  await screen.findByText("A follow-up");
+  expect(screen.queryByText("A follow-up")).toBeNull();
   expect(screen.getByLabelText("Message")).toHaveProperty(
     "value",
     "Draft in progress",

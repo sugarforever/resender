@@ -1,7 +1,7 @@
 import type { Conversation, ThreadMessage } from "@/lib/threads";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, Reply, Paperclip } from "lucide-react";
-import { ComposeView } from "./ComposeView";
+import { ReplyEditor } from "./ReplyEditor";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import {
@@ -11,8 +11,7 @@ import {
   initials,
   joinAddresses,
 } from "@/lib/format";
-import { createReplyDraft, messageId } from "@/lib/threads";
-import { getDefaultFrom } from "@/lib/prefs";
+import { messageId } from "@/lib/threads";
 import { errMessage } from "@/lib/api";
 
 export interface ConversationProps {
@@ -29,16 +28,11 @@ export function ConversationView({
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [replyTarget, setReplyTarget] = useState<ThreadMessage | null>(null);
   const composerRef = useRef<HTMLDivElement>(null);
-  const draft = useMemo(
-    () =>
-      replyTarget ? createReplyDraft(replyTarget, getDefaultFrom()) : null,
-    [replyTarget],
-  );
   useEffect(() => {
     if (replyTarget)
       composerRef.current?.scrollIntoView?.({
         behavior: "smooth",
-        block: "nearest",
+        block: "start",
       });
   }, [replyTarget]);
   const last = conversation.messages[conversation.messages.length - 1];
@@ -61,15 +55,25 @@ export function ConversationView({
               <MessageCard
                 key={key}
                 mail={mail}
-                expanded={expanded[key] ?? mail === last}
+                expanded={expanded[key] ?? (mail === last && !replyTarget)}
                 fetchFull={fetchFull}
                 onToggle={() =>
                   setExpanded((current) => ({
                     ...current,
-                    [key]: !(current[key] ?? mail === last),
+                    [key]: !(current[key] ?? (mail === last && !replyTarget)),
                   }))
                 }
-                onReply={setReplyTarget}
+                onReply={(mail) => {
+                  setExpanded(
+                    Object.fromEntries(
+                      conversation.messages.map((message) => [
+                        `${message.direction}:${message.id}`,
+                        false,
+                      ]),
+                    ),
+                  );
+                  setReplyTarget(mail);
+                }}
                 replyDisabled={!!replyTarget}
               />
             );
@@ -85,14 +89,17 @@ export function ConversationView({
                   reply as a separate conversation.
                 </p>
               )}
-              <ComposeView
+              <ReplyEditor
                 key={`${replyTarget.direction}:${replyTarget.id}`}
-                draft={draft}
-                inline
-                onCancel={() => setReplyTarget(null)}
+                original={replyTarget}
+                onCancel={() => {
+                  setReplyTarget(null);
+                  setExpanded({});
+                }}
                 onSent={(mail) => {
                   onSent(mail);
                   setReplyTarget(null);
+                  setExpanded({});
                 }}
               />
             </div>

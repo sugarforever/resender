@@ -12,7 +12,7 @@
 - [x] Implement typed header metadata, grouping, local outgoing-link storage, and Rust header forwarding with validation tests.
 - [x] Add a cached, paced detail loader and stack messages in the reading pane. Keep failed messages retryable and cancel stale account loads.
 - [x] Add inline reply/cancel/send behavior and preserve the conversation after sending. Test collapse, send failure, and successful reply payloads.
-- [ ] Document the current history window and local-link limitation. Run frontend tests/build, Rust tests, and diff checks. Request independent review, address findings, and open a GitHub PR.
+- [x] Document the current history window and local-link limitation. Run frontend tests/build, Rust tests, and diff checks. Request independent review, address findings, and open a GitHub PR.
 
 ## Review focus
 
@@ -25,3 +25,7 @@
 ## Validation
 
 23 frontend tests and four Rust tests pass. Production build, Rust formatting, and whitespace checks pass. Independent review found a stale-account poll race, now covered by a regression test and fixed; re-review found no remaining important issues. No real emails were sent during validation.
+
+## Reply editor follow-up
+
+Replaced the full inline new-message form with a dedicated compact reply editor. Source messages collapse on reply; the recipient row expands optional envelope fields; the writing area sits above an attributed, collapsible quotation. Both outgoing text and escaped HTML include the original. Preview hiding does not change sent content. Browser layout checks at 1280×720 and a mailbox sized for the minimum desktop window confirmed the editor and Send control remain visible. All 27 frontend tests pass; independent review found no important issues.

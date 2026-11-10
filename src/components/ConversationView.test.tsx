@@ -89,6 +89,22 @@ describe("conversation reading and replying", () => {
     );
     await screen.findByText("How are you?");
     await user.click(screen.getByRole("button", { name: "Reply" }));
+    expect(screen.queryByLabelText("From")).toBeNull();
+    expect(screen.queryByLabelText("Subject")).toBeNull();
+    expect(
+      screen
+        .getByRole("button", {
+          name: /expand message from person@example.com/i,
+        })
+        .getAttribute("aria-expanded"),
+    ).toBe("false");
+    expect(screen.getByLabelText("Message")).toBe(document.activeElement);
+    expect(
+      screen.getByLabelText("Quoted original message").textContent,
+    ).toContain("How are you?");
+    await user.click(
+      screen.getByRole("button", { name: "Edit reply details" }),
+    );
     expect(screen.getByLabelText("To")).toHaveProperty(
       "value",
       "person@example.com",
@@ -105,7 +121,7 @@ describe("conversation reading and replying", () => {
         expect.objectContaining({
           id: "new-sent",
           direction: "sent",
-          text: "I'm fine, thanks.",
+          text: expect.stringContaining("I'm fine, thanks."),
           headers: {
             "In-Reply-To": original.message_id,
             References: original.message_id,
@@ -116,6 +132,8 @@ describe("conversation reading and replying", () => {
     expect(api.sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         subject: "Re: Greeting",
+        text: expect.stringContaining("> How are you?"),
+        html: expect.stringContaining("<blockquote"),
         headers: {
           "In-Reply-To": original.message_id,
           References: original.message_id,
@@ -149,7 +167,7 @@ describe("conversation reading and replying", () => {
       "value",
       "Keep this draft",
     );
-    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    await user.click(screen.getByRole("button", { name: "Discard reply" }));
     expect(screen.queryByLabelText("Reply composer")).toBeNull();
   });
 
@@ -168,5 +186,64 @@ describe("conversation reading and replying", () => {
     );
     const iframe = await screen.findByTitle("Email content");
     expect(iframe.getAttribute("sandbox")).toBe("");
+  });
+
+  it("can hide the quote preview without excluding the original from the sent reply", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.sendEmail).mockResolvedValue({ id: "hidden-quote" });
+    render(
+      <ConversationView
+        conversation={{ id: "one", messages: [original] }}
+        fetchFull={fetchFull}
+        onSent={vi.fn()}
+      />,
+    );
+    await screen.findByText("How are you?");
+    await user.click(screen.getByRole("button", { name: "Reply" }));
+    await user.type(screen.getByLabelText("Message"), "My reply");
+    await user.click(
+      screen.getByRole("button", { name: "Hide quoted message" }),
+    );
+    expect(screen.queryByLabelText("Quoted original message")).toBeNull();
+    expect(screen.getByLabelText("Message")).toHaveProperty(
+      "value",
+      "My reply",
+    );
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() =>
+      expect(api.sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining("> How are you?"),
+        }),
+      ),
+    );
+  });
+
+  it("validates copied recipients and retains the reply text", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.sendEmail).mockClear();
+    render(
+      <ConversationView
+        conversation={{ id: "one", messages: [original] }}
+        fetchFull={fetchFull}
+        onSent={vi.fn()}
+      />,
+    );
+    await screen.findByText("How are you?");
+    await user.click(screen.getByRole("button", { name: "Reply" }));
+    await user.type(screen.getByLabelText("Message"), "Keep my text");
+    await user.click(
+      screen.getByRole("button", { name: "Edit reply details" }),
+    );
+    await user.type(screen.getByLabelText("Cc", { exact: true }), "invalid");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    expect(screen.getByRole("alert").textContent).toContain(
+      "not a valid address",
+    );
+    expect(api.sendEmail).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Message")).toHaveProperty(
+      "value",
+      "Keep my text",
+    );
   });
 });

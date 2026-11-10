@@ -136,7 +136,6 @@ function ConnectedApp({
             />
           ) : view === "compose" ? (
             <ComposeView
-              draft={null}
               onSent={(mail) => {
                 handleSent(mail);
                 setView("sent");

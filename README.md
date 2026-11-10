@@ -69,10 +69,15 @@ Requirements: Node, Rust, and the platform
 ## Conversations and replies
 
 Open a conversation in Inbox or Sent, expand a message, and click **Reply**.
-The editor stays below the messages. It uses the original Reply-To address when
+The source message collapses into its header, leaving a compact reply editor
+with the recipient at the top and the writing area directly underneath. Expand
+the recipient row to edit From, To, Cc, Bcc, or Subject. The editor uses the
+original Reply-To address when
 available, your default sender (or the original receiving address), and the
-existing subject. Sending adds the reply to the same stack; **Cancel** closes
-the editor. A failed send keeps your draft for retrying.
+existing subject. Sending adds the reply to the same stack; **Discard reply** closes
+the editor. A failed send keeps your draft for retrying. The quoted original
+appears below a divider, with an attribution and quote line, and is included in
+both the plain-text and HTML email. You can hide its preview while writing.
 
 Threads are linked by email Message-ID and reply headers, not subject matching.
 The current history window contains the latest 50 received and 50 sent messages;

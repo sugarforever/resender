@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api, errMessage } from "@/lib/api";
@@ -11,28 +11,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import type { ThreadMessage } from "@/lib/threads";
-import { saveReplyLink } from "@/lib/reply-links";
-
-export interface Draft {
-  from?: string;
-  headers?: Record<string, string>;
-  to?: string;
-  subject?: string;
-}
 
 interface Props {
-  draft: Draft | null;
   onSent: (mail: ThreadMessage) => void;
-  inline?: boolean;
-  onCancel?: () => void;
 }
 
-export function ComposeView({
-  draft,
-  onSent,
-  inline = false,
-  onCancel,
-}: Props) {
+export function ComposeView({ onSent }: Props) {
   const [from, setFrom] = useState(getDefaultFrom());
   const [to, setTo] = useState("");
   const [cc, setCc] = useState("");
@@ -41,14 +25,6 @@ export function ComposeView({
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
-
-  // Apply an incoming reply draft.
-  useEffect(() => {
-    if (!draft) return;
-    if (draft.from !== undefined) setFrom(draft.from);
-    if (draft.to !== undefined) setTo(draft.to);
-    if (draft.subject !== undefined) setSubject(draft.subject);
-  }, [draft]);
 
   const send = async () => {
     const fromTrim = from.trim();
@@ -84,13 +60,7 @@ export function ComposeView({
         bcc: parseAddressList(bcc),
         subject: subject.trim(),
         text: body,
-        headers: draft?.headers,
       });
-      if (draft?.headers && !saveReplyLink(res.id, draft.headers)) {
-        toast.warning(
-          "Email sent, but its conversation link could not be saved on this device.",
-        );
-      }
       toast.success("Email sent", { description: `Message id: ${res.id}` });
       // Reset, but keep the sender for the next message.
       setTo("");
@@ -107,7 +77,6 @@ export function ComposeView({
         cc: parseAddressList(cc),
         subject: subject.trim(),
         text: body,
-        headers: draft?.headers,
         created_at: new Date().toISOString(),
       });
     } catch (e) {
@@ -119,24 +88,12 @@ export function ComposeView({
 
   return (
     <div
-      className={inline ? "flex flex-col" : "flex h-full min-h-0 flex-col"}
-      aria-label={inline ? "Reply composer" : "New message composer"}
+      className="flex h-full min-h-0 flex-col"
+      aria-label="New message composer"
     >
       <header className="flex h-14 items-center justify-between px-6">
-        <h2 className="text-sm font-semibold">
-          {inline ? "Reply" : "New message"}
-        </h2>
+        <h2 className="text-sm font-semibold">New message</h2>
         <div className="flex items-center gap-2">
-          {onCancel && (
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={sending}
-              onClick={onCancel}
-            >
-              Cancel
-            </Button>
-          )}
           <Button onClick={send} disabled={sending} size="sm">
             {sending ? (
               <Loader2 className="size-4 animate-spin" />
@@ -149,7 +106,7 @@ export function ComposeView({
       </header>
       <Separator />
 
-      <ScrollArea className={inline ? "" : "min-h-0 flex-1"}>
+      <ScrollArea className="min-h-0 flex-1">
         <div className="mx-auto flex max-w-2xl flex-col gap-4 p-6">
           <Field label="From" htmlFor="from">
             <Input
@@ -221,7 +178,6 @@ export function ComposeView({
           <Field label="Message" htmlFor="body">
             <Textarea
               id="body"
-              autoFocus={inline}
               placeholder="Write your message…"
               value={body}
               onChange={(e) => setBody(e.target.value)}
