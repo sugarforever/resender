@@ -3,28 +3,21 @@ import {
   Inbox as InboxIcon,
   Send as SendIcon,
   RefreshCw,
-  Paperclip,
   AlertCircle,
-  Reply,
   GripVertical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { errMessage } from "@/lib/api";
 import {
   avatarStyle,
   displayName,
-  fullDate,
   initials,
   joinAddresses,
-  parseAddress,
   shortDate,
 } from "@/lib/format";
-import type { Mail } from "@/lib/types";
+import type { Conversation, ThreadMessage } from "@/lib/threads";
+import { ConversationView } from "./ConversationView";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { RefreshCountdown } from "@/components/RefreshCountdown";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 
 const LIST_WIDTH_KEY = "resender.listWidth";
 const MIN_LIST_WIDTH = 260;
@@ -32,14 +25,17 @@ const MIN_READING_WIDTH = 380;
 
 interface Props {
   kind: "inbox" | "sent";
-  emails: Mail[];
+  conversations: Conversation[];
+  indexing: boolean;
+  incomplete: boolean;
+  onRetryIndex: () => void;
+  onSent: (mail: ThreadMessage) => void;
   loading: boolean;
   error: string | null;
   onRefresh: () => void;
-  fetchFull: (id: string) => Promise<Mail>;
+  fetchFull: (mail: ThreadMessage) => Promise<ThreadMessage>;
   unreadIds?: Set<string>;
   onOpen?: (id: string) => void;
-  onReply?: (email: Mail) => void;
   /** When provided (inbox), the refresh button shows a poll countdown. */
   nextRefreshAt?: number | null;
   pollIntervalSec?: number;
@@ -47,21 +43,31 @@ interface Props {
 
 export function MailboxView({
   kind,
-  emails,
+  conversations,
+  indexing,
+  incomplete,
+  onRetryIndex,
+  onSent,
   loading,
   error,
   onRefresh,
   fetchFull,
   unreadIds,
   onOpen,
-  onReply,
   nextRefreshAt,
   pollIntervalSec,
 }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [full, setFull] = useState<Mail | null>(null);
-  const [loadingFull, setLoadingFull] = useState(false);
-  const [fullError, setFullError] = useState<string | null>(null);
+  const direction = kind === "inbox" ? "received" : "sent";
+  const threads = conversations.filter((thread) =>
+    thread.messages.some((mail) => mail.direction === direction),
+  );
+  const emails = threads.map(
+    (thread) => thread.messages[thread.messages.length - 1],
+  );
+  const selectedThread = threads.find((thread) =>
+    thread.messages.some((mail) => mail.id === selectedId),
+  );
 
   // Draggable list/detail splitter (self-contained, persisted).
   const groupRef = useRef<HTMLDivElement>(null);
@@ -103,45 +109,19 @@ export function MailboxView({
     }
   }, []);
 
-  // Keep a valid selection as the list changes.
+  // Retain the selected message even when its thread receives a new reply.
   useEffect(() => {
-    if (emails.length === 0) {
-      setSelectedId(null);
-      return;
-    }
-    if (!selectedId || !emails.some((e) => e.id === selectedId)) {
-      setSelectedId(emails[0].id);
-    }
-  }, [emails, selectedId]);
-
-  // Load the full body whenever the selection changes.
-  useEffect(() => {
-    if (!selectedId) {
-      setFull(null);
-      return;
-    }
-    let cancelled = false;
-    setLoadingFull(true);
-    setFullError(null);
-    setFull(null);
-    fetchFull(selectedId)
-      .then((mail) => {
-        if (!cancelled) setFull(mail);
-      })
-      .catch((e) => {
-        if (!cancelled) setFullError(errMessage(e));
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingFull(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedId, fetchFull]);
+    if (!selectedThread) setSelectedId(emails[0]?.id ?? null);
+  }, [selectedThread, emails]);
 
   const selectRow = (id: string) => {
-    setSelectedId(id);
-    onOpen?.(id);
+    const thread = threads.find((item) =>
+      item.messages.some((mail) => mail.id === id),
+    );
+    if (thread !== selectedThread) setSelectedId(id);
+    thread?.messages
+      .filter((mail) => mail.direction === "received")
+      .forEach((mail) => onOpen?.(mail.id));
   };
 
   return (
@@ -192,34 +172,64 @@ export function MailboxView({
             children in a `display: table` element (min-width:100%) whose
             intrinsic width defeats `truncate`, pushing the timestamp offscreen.
             See radix-ui/primitives#926. */}
+        {(indexing || incomplete) && (
+          <div
+            className="text-muted-foreground border-b px-4 py-2 text-xs"
+            role="status"
+          >
+            {indexing ? (
+              "Loading conversation history…"
+            ) : (
+              <>
+                Some history could not be loaded.{" "}
+                <button
+                  className="underline cursor-pointer"
+                  onClick={onRetryIndex}
+                >
+                  Retry
+                </button>
+              </>
+            )}
+          </div>
+        )}
         <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
           {emails.length === 0 && !loading && !error ? (
             <EmptyList kind={kind} />
           ) : (
             <ul className="flex flex-col gap-0.5 p-2">
               {emails.map((mail) => {
-                const isUnread = unreadIds?.has(mail.id) ?? false;
-                const person = kind === "inbox" ? mail.from : mail.to?.[0] ?? "";
-                const selected = selectedId === mail.id;
+                const thread = threads.find((item) =>
+                  item.messages.some((message) => message.id === mail.id),
+                )!;
+                const isUnread = thread.messages.some((message) =>
+                  unreadIds?.has(message.id),
+                );
+                const participants = thread.messages.filter(
+                  (message) => message.direction === direction,
+                );
+                const participant = participants[participants.length - 1];
+                const person =
+                  kind === "inbox"
+                    ? participant.from
+                    : (participant.to?.[0] ?? "");
+                const selected = thread === selectedThread;
                 const label =
                   kind === "inbox"
                     ? displayName(person)
-                    : joinAddresses(mail.to) || "(no recipient)";
+                    : joinAddresses(participant.to) || "(no recipient)";
                 return (
                   <li key={mail.id}>
                     <button
                       onClick={() => selectRow(mail.id)}
                       className={cn(
                         "group relative flex w-full items-center gap-3 rounded-lg py-2.5 pr-3 pl-2.5 text-left transition-colors duration-150 cursor-pointer",
-                        selected
-                          ? "bg-accent"
-                          : "hover:bg-accent/55"
+                        selected ? "bg-accent" : "hover:bg-accent/55",
                       )}
                     >
                       <span
                         className={cn(
                           "bg-brand absolute top-1/2 left-0 h-5 w-[3px] -translate-y-1/2 rounded-r-full transition-opacity duration-150",
-                          selected ? "opacity-100" : "opacity-0"
+                          selected ? "opacity-100" : "opacity-0",
                         )}
                       />
                       <span
@@ -235,10 +245,15 @@ export function MailboxView({
                               "min-w-0 flex-1 truncate text-sm",
                               isUnread
                                 ? "text-foreground font-semibold"
-                                : "font-medium"
+                                : "font-medium",
                             )}
                           >
                             {label}
+                            {thread.messages.length > 1 && (
+                              <span className="text-muted-foreground ml-1 text-xs">
+                                ({thread.messages.length})
+                              </span>
+                            )}
                           </span>
                           <span className="text-muted-foreground shrink-0 text-[11px] tabular-nums">
                             {shortDate(mail.created_at)}
@@ -253,7 +268,7 @@ export function MailboxView({
                               "min-w-0 flex-1 truncate text-[13px]",
                               isUnread
                                 ? "text-foreground/90"
-                                : "text-muted-foreground"
+                                : "text-muted-foreground",
                             )}
                           >
                             {mail.subject || "(no subject)"}
@@ -288,161 +303,17 @@ export function MailboxView({
 
       {/* Reading pane */}
       <div className="bg-card flex h-full min-h-0 min-w-0 flex-1 flex-col">
-        {!selectedId ? (
+        {!selectedThread ? (
           <EmptyReading kind={kind} />
         ) : (
-          <ReadingPane
-            kind={kind}
-            summary={emails.find((e) => e.id === selectedId) ?? null}
-            full={full}
-            loading={loadingFull}
-            error={fullError}
-            onReply={onReply}
+          <ConversationView
+            key={selectedId}
+            conversation={selectedThread}
+            fetchFull={fetchFull}
+            onSent={onSent}
           />
         )}
       </div>
-    </div>
-  );
-}
-
-function ReadingPane({
-  kind,
-  summary,
-  full,
-  loading,
-  error,
-  onReply,
-}: {
-  kind: "inbox" | "sent";
-  summary: Mail | null;
-  full: Mail | null;
-  loading: boolean;
-  error: string | null;
-  onReply?: (email: Mail) => void;
-}) {
-  const mail = full ?? summary;
-  if (!mail) return null;
-
-  const person = kind === "inbox" ? mail.from : mail.to?.[0] ?? "";
-  const { email: personEmail } = parseAddress(person);
-
-  return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-start justify-between gap-4 px-7 pt-6 pb-4">
-        <div className="min-w-0 flex-1">
-          <h2 className="text-xl leading-snug font-semibold tracking-tight text-balance">
-            {mail.subject || "(no subject)"}
-          </h2>
-          <div className="mt-3.5 flex items-center gap-3">
-            <div
-              className="flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
-              style={avatarStyle(person)}
-            >
-              {initials(person)}
-            </div>
-            <div className="min-w-0 text-sm">
-              <div className="flex flex-wrap items-center gap-x-2">
-                <span className="font-semibold">{displayName(person)}</span>
-                {personEmail && displayName(person) !== personEmail && (
-                  <span className="text-muted-foreground truncate">
-                    &lt;{personEmail}&gt;
-                  </span>
-                )}
-              </div>
-              <div className="text-muted-foreground mt-0.5 text-xs">
-                {kind === "inbox" ? "to me" : `to ${joinAddresses(mail.to)}`}
-                {" · "}
-                {fullDate(mail.created_at)}
-              </div>
-            </div>
-          </div>
-        </div>
-        {kind === "inbox" && onReply && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onReply(mail)}
-            className="shadow-xs"
-          >
-            <Reply className="size-4" />
-            Reply
-          </Button>
-        )}
-      </div>
-
-      {(kind === "sent" && mail.last_event) ||
-      (full?.attachments && full.attachments.length > 0) ? (
-        <div className="flex flex-wrap items-center gap-2 px-7 pb-3">
-          {kind === "sent" && mail.last_event && (
-            <Badge variant="secondary" className="capitalize">
-              {mail.last_event.replace(/_/g, " ")}
-            </Badge>
-          )}
-          {full?.attachments?.map((a) => (
-            <Badge key={a.id} variant="outline" className="gap-1.5 font-normal">
-              <Paperclip className="size-3" />
-              {a.filename}
-            </Badge>
-          ))}
-        </div>
-      ) : null}
-
-      <Separator />
-
-      <div className="min-h-0 flex-1">
-        {loading ? (
-          <BodySkeleton />
-        ) : error ? (
-          <div className="text-destructive flex items-start gap-2 p-7 text-sm">
-            <AlertCircle className="mt-0.5 size-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-        ) : (
-          <MailBody html={full?.html} text={full?.text} />
-        )}
-      </div>
-    </div>
-  );
-}
-
-function MailBody({ html, text }: { html?: string; text?: string }) {
-  if (html && html.trim()) {
-    return (
-      <iframe
-        // Sandboxed with no allow-scripts: remote email HTML cannot run JS.
-        sandbox=""
-        title="Email content"
-        className="h-full w-full bg-white"
-        srcDoc={html}
-      />
-    );
-  }
-  if (text && text.trim()) {
-    return (
-      <ScrollArea className="h-full">
-        <pre className="text-foreground/90 p-7 font-sans text-sm leading-relaxed break-words whitespace-pre-wrap">
-          {text}
-        </pre>
-      </ScrollArea>
-    );
-  }
-  return (
-    <div className="text-muted-foreground p-7 text-sm">
-      This email has no content to display.
-    </div>
-  );
-}
-
-function BodySkeleton() {
-  return (
-    <div className="flex flex-col gap-3 p-7">
-      {[100, 92, 96, 70, 88, 60].map((w, i) => (
-        <div
-          key={i}
-          className="bg-muted h-3.5 animate-pulse rounded"
-          style={{ width: `${w}%` }}
-        />
-      ))}
     </div>
   );
 }

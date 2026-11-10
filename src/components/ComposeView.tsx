@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api, errMessage } from "@/lib/api";
@@ -10,18 +10,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-
-export interface Draft {
-  to?: string;
-  subject?: string;
-}
+import type { ThreadMessage } from "@/lib/threads";
 
 interface Props {
-  draft: Draft | null;
-  onSent: () => void;
+  onSent: (mail: ThreadMessage) => void;
 }
 
-export function ComposeView({ draft, onSent }: Props) {
+export function ComposeView({ onSent }: Props) {
   const [from, setFrom] = useState(getDefaultFrom());
   const [to, setTo] = useState("");
   const [cc, setCc] = useState("");
@@ -30,13 +25,6 @@ export function ComposeView({ draft, onSent }: Props) {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
-
-  // Apply an incoming reply draft.
-  useEffect(() => {
-    if (!draft) return;
-    if (draft.to !== undefined) setTo(draft.to);
-    if (draft.subject !== undefined) setSubject(draft.subject);
-  }, [draft]);
 
   const send = async () => {
     const fromTrim = from.trim();
@@ -73,7 +61,7 @@ export function ComposeView({ draft, onSent }: Props) {
         subject: subject.trim(),
         text: body,
       });
-      toast.success("Email sent", { description: `Message id: ${res.id}` });
+      toast.success("Email submitted to Resend", { description: `Message id: ${res.id}` });
       // Reset, but keep the sender for the next message.
       setTo("");
       setCc("");
@@ -81,7 +69,16 @@ export function ComposeView({ draft, onSent }: Props) {
       setShowCc(false);
       setSubject("");
       setBody("");
-      onSent();
+      onSent({
+        id: res.id,
+        direction: "sent",
+        from: fromTrim,
+        to: toList,
+        cc: parseAddressList(cc),
+        subject: subject.trim(),
+        text: body,
+        created_at: new Date().toISOString(),
+      });
     } catch (e) {
       toast.error("Couldn't send", { description: errMessage(e) });
     } finally {
@@ -90,17 +87,22 @@ export function ComposeView({ draft, onSent }: Props) {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div
+      className="flex h-full min-h-0 flex-col"
+      aria-label="New message composer"
+    >
       <header className="flex h-14 items-center justify-between px-6">
-        <h1 className="text-sm font-semibold">New message</h1>
-        <Button onClick={send} disabled={sending} size="sm">
-          {sending ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Send className="size-4" />
-          )}
-          {sending ? "Sending…" : "Send"}
-        </Button>
+        <h2 className="text-sm font-semibold">New message</h2>
+        <div className="flex items-center gap-2">
+          <Button onClick={send} disabled={sending} size="sm">
+            {sending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Send className="size-4" />
+            )}
+            {sending ? "Sending…" : "Send"}
+          </Button>
+        </div>
       </header>
       <Separator />
 

@@ -18,6 +18,7 @@ pub fn run() {
             resend::get_received,
             resend::list_sent,
             resend::get_sent,
+            resend::list_domains,
             poller::start_poller,
             poller::stop_poller,
             poller::set_poll_interval,

@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
+  Domain,
   ListResponse,
   ReceivedEmail,
   SendEmailInput,
@@ -9,13 +10,15 @@ import type {
 
 /**
  * Typed wrapper around the Rust commands. Every Resend call is proxied through
- * the backend so the API key never enters the webview.
+ * the backend. Only key entry and Settings reveal use the key in the webview.
  */
 export const api = {
   hasApiKey: () => invoke<boolean>("has_api_key"),
   revealApiKey: () => invoke<string | null>("reveal_api_key"),
   saveApiKey: (key: string) => invoke<void>("save_api_key", { key }),
   deleteApiKey: () => invoke<void>("delete_api_key"),
+  listDomains: (after?: string) =>
+    invoke<ListResponse<Domain>>("list_domains", { after }),
 
   sendEmail: (input: SendEmailInput) =>
     invoke<SendResult>("send_email", { input }),
