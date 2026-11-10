@@ -1,11 +1,19 @@
-import { format, formatDistanceToNowStrict, isToday, isYesterday } from "date-fns";
+import {
+  format,
+  formatDistanceToNowStrict,
+  isToday,
+  isYesterday,
+} from "date-fns";
 
 /** Parse `Name <email@x.com>` into its display name and address. */
 export function parseAddress(input: string): { name: string; email: string } {
   if (!input) return { name: "", email: "" };
   const match = input.match(/^\s*(.*?)\s*<([^>]+)>\s*$/);
   if (match) {
-    return { name: match[1].replace(/^"|"$/g, "").trim(), email: match[2].trim() };
+    return {
+      name: match[1].replace(/^"|"$/g, "").trim(),
+      email: match[2].trim(),
+    };
   }
   return { name: "", email: input.trim() };
 }
@@ -57,7 +65,7 @@ export function toDate(input?: string): Date {
   // Normalize trailing timezone: +HH / +HHMM / +HH:MM -> +HH:MM.
   s = s.replace(
     /([+-]\d{2}):?(\d{2})?$/,
-    (_m, hh: string, mm?: string) => `${hh}:${mm ?? "00"}`
+    (_m, hh: string, mm?: string) => `${hh}:${mm ?? "00"}`,
   );
   const d = new Date(s);
   return Number.isNaN(d.getTime()) ? new Date(input) : d;
@@ -90,10 +98,33 @@ export function joinAddresses(list?: string[]): string {
 
 /** Split a comma/semicolon/newline-separated address field into clean entries. */
 export function parseAddressList(raw: string): string[] {
-  return raw
-    .split(/[,;\n]+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const addresses: string[] = [];
+  let start = 0;
+  let quoted = false;
+  let escaped = false;
+  let angle = false;
+  for (let index = 0; index < raw.length; index++) {
+    const char = raw[index];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (quoted && char === "\\") {
+      escaped = true;
+      continue;
+    }
+    if (char === '"') quoted = !quoted;
+    if (!quoted) {
+      if (char === "<") angle = true;
+      if (char === ">") angle = false;
+      if (!angle && /[,;\n]/.test(char)) {
+        addresses.push(raw.slice(start, index).trim());
+        start = index + 1;
+      }
+    }
+  }
+  addresses.push(raw.slice(start).trim());
+  return addresses.filter(Boolean);
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

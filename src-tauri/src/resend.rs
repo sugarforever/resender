@@ -91,7 +91,10 @@ async fn request(method: Method, path: &str, body: Option<Value>) -> Result<Valu
 /// Validation uses `GET /emails` which requires a Full-access key — the same
 /// permission the read/poll features need.
 #[tauri::command]
-pub async fn save_api_key(key: String) -> Result<(), String> {
+pub async fn save_api_key(
+    key: String,
+    poller: tauri::State<'_, crate::poller::Poller>,
+) -> Result<(), String> {
     let key = key.trim().to_string();
     if key.is_empty() {
         return Err("API key cannot be empty.".into());
@@ -107,7 +110,9 @@ pub async fn save_api_key(key: String) -> Result<(), String> {
                 e
             }
         })?;
-    crate::keychain::set_api_key(&key)
+    crate::keychain::set_api_key(&key)?;
+    crate::poller::invalidate(&poller);
+    Ok(())
 }
 
 /// Whether an API key is currently stored.
@@ -124,8 +129,10 @@ pub async fn reveal_api_key() -> Result<Option<String>, String> {
 
 /// Remove the stored API key.
 #[tauri::command]
-pub async fn delete_api_key() -> Result<(), String> {
-    crate::keychain::delete_api_key()
+pub async fn delete_api_key(poller: tauri::State<'_, crate::poller::Poller>) -> Result<(), String> {
+    crate::keychain::delete_api_key()?;
+    crate::poller::invalidate(&poller);
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------
@@ -134,6 +141,8 @@ pub async fn delete_api_key() -> Result<(), String> {
 
 #[derive(Deserialize)]
 pub struct SendEmailInput {
+    #[serde(default)]
+    pub headers: Option<std::collections::BTreeMap<String, String>>,
     pub from: String,
     pub to: Vec<String>,
     pub subject: String,
@@ -151,6 +160,11 @@ pub struct SendEmailInput {
 
 #[tauri::command]
 pub async fn send_email(input: SendEmailInput) -> Result<Value, String> {
+    let body = send_body(input)?;
+    request(Method::POST, "/emails", Some(body)).await
+}
+
+fn send_body(input: SendEmailInput) -> Result<Value, String> {
     if input.to.is_empty() {
         return Err("At least one recipient is required.".into());
     }
@@ -181,7 +195,17 @@ pub async fn send_email(input: SendEmailInput) -> Result<Value, String> {
         body["reply_to"] = json!(v);
     }
 
-    request(Method::POST, "/emails", Some(body)).await
+    if let Some(headers) = input.headers.filter(|headers| !headers.is_empty()) {
+        for (name, value) in &headers {
+            if reqwest::header::HeaderName::from_bytes(name.as_bytes()).is_err()
+                || reqwest::header::HeaderValue::from_str(value).is_err()
+            {
+                return Err("Invalid email header.".into());
+            }
+        }
+        body["headers"] = json!(headers);
+    }
+    Ok(body)
 }
 
 // ---------------------------------------------------------------------------
@@ -228,11 +252,52 @@ pub async fn get_sent(id: String) -> Result<Value, String> {
 /// List domains accessible to the configured key, one page at a time.
 #[tauri::command]
 pub async fn list_domains(after: Option<String>) -> Result<Value, String> {
-    let mut url = reqwest::Url::parse(&format!("{BASE_URL}/domains?limit=100"))
-        .map_err(|e| e.to_string())?;
+    let mut url =
+        reqwest::Url::parse(&format!("{BASE_URL}/domains?limit=100")).map_err(|e| e.to_string())?;
     if let Some(cursor) = after {
         url.query_pairs_mut().append_pair("after", &cursor);
     }
     let path = format!("{}?{}", url.path(), url.query().unwrap_or_default());
     request(Method::GET, &path, None).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn input() -> SendEmailInput {
+        serde_json::from_value(json!({
+            "from": "me@example.com", "to": ["person@example.com"],
+            "subject": "Re: Greeting", "text": "Hello",
+            "headers": { "In-Reply-To": "<parent@example.com>", "References": "<root@example.com> <parent@example.com>" }
+        })).unwrap()
+    }
+
+    #[test]
+    fn forwards_threading_headers_without_changing_body() {
+        let body = send_body(input()).unwrap();
+        assert_eq!(body["headers"]["In-Reply-To"], "<parent@example.com>");
+        assert_eq!(
+            body["headers"]["References"],
+            "<root@example.com> <parent@example.com>"
+        );
+        assert_eq!(body["text"], "Hello");
+    }
+
+    #[test]
+    fn rejects_header_injection_before_network_request() {
+        let mut value = input();
+        value.headers = Some(std::collections::BTreeMap::from([(
+            "In-Reply-To".into(),
+            "<a@example.com>\r\nBcc: victim@example.com".into(),
+        )]));
+        assert!(send_body(value).is_err());
+    }
+
+    #[test]
+    fn new_messages_do_not_require_thread_headers() {
+        let mut value = input();
+        value.headers = None;
+        assert!(send_body(value).unwrap().get("headers").is_none());
+    }
 }

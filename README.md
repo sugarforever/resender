@@ -11,10 +11,14 @@ Tauri, React, shadcn/ui, and lucide icons.
   verification status in the sidebar, separately from your default sender.
 - **Secure API key storage** — your Resend key is kept in the OS-native keychain
   (Keychain on macOS, Credential Manager on Windows, Secret Service on Linux),
-  never in plain text or the webview.
+  rather than persisted in plain text. Settings can retrieve it for display.
 - **Read email** — browse your inbox (Resend Inbound) and sent mail, with a
   clean reading pane. HTML bodies render in a script-sandboxed iframe.
 - **Send email** — compose with To/Cc/Bcc, a default sender, and inline validation.
+- **Conversation threads** — related incoming and sent emails appear in a single
+  stack. Older messages collapse; expand any message to read it or reply inline.
+  Replies use `In-Reply-To` and `References` so recipients' email apps can
+  recognize the conversation.
 - **New-mail notifications** — Resender polls for inbound email on a configurable
   interval and raises a native system notification when something arrives.
 
@@ -22,7 +26,7 @@ Tauri, React, shadcn/ui, and lucide icons.
 
 - **Frontend**: Vite + React + TypeScript + Tailwind v4 + shadcn/ui + lucide-react.
 - **Backend**: Rust (Tauri v2). **All Resend API calls go through Rust** using
-  `reqwest`, so the API key never enters the webview and there are no CORS issues.
+  `reqwest`; API authentication happens in Rust and avoids browser CORS issues.
 - **Key storage**: the `keyring` crate (`src-tauri/src/keychain.rs`).
 - **Resend client**: `src-tauri/src/resend.rs` — centralizes auth, and translates
   Resend `429` rate-limit / quota responses into friendly messages.
@@ -61,3 +65,33 @@ Requirements: Node, Rust, and the platform
    <https://resend.com/api-keys>). It's validated, then stored in your keychain.
 3. Set a default "From" address (a domain you've verified in Resend) under
    **Settings** to prefill the composer.
+
+## Conversations and replies
+
+Open a conversation in Inbox or Sent, expand a message, and click **Reply**.
+The editor stays below the messages. It uses the original Reply-To address when
+available, your default sender (or the original receiving address), and the
+existing subject. Sending adds the reply to the same stack; **Cancel** closes
+the editor. A failed send keeps your draft for retrying.
+
+Threads are linked by email Message-ID and reply headers, not subject matching.
+The current history window contains the latest 50 received and 50 sent messages;
+older messages outside that window are not fetched. Conversation grouping fills
+in as message details load. Loading is paced and cached in memory for the session.
+
+Resend does not document returning custom reply headers on sent-email retrieval.
+Resender therefore stores reply links for emails it sends in local storage on
+this device (up to 1,000 links), without storing bodies or API keys there. These
+links survive restarts but do not sync to another device. Replies sent elsewhere
+may appear separately until received references connect them. If the original
+email has no Message-ID, the app warns that the recipient may see a separate
+conversation. Switching conversations or leaving the mailbox discards an unsent
+inline draft; drafts are not saved.
+
+## Checks
+
+```bash
+pnpm test
+pnpm build
+cargo test --manifest-path src-tauri/Cargo.toml
+```

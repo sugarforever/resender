@@ -20,6 +20,7 @@ export interface Domain {
 
 /** A received (inbound) email as returned by the list endpoint. */
 export interface ReceivedEmail {
+  headers?: Record<string, string>;
   id: string;
   from: string;
   to: string[];
@@ -37,6 +38,8 @@ export interface ReceivedEmail {
 
 /** A sent email as returned by the list endpoint. */
 export interface SentEmail {
+  message_id?: string;
+  headers?: Record<string, string>;
   id: string;
   from: string;
   to: string[];
@@ -53,6 +56,9 @@ export interface SentEmail {
  * Both {@link ReceivedEmail} and {@link SentEmail} are assignable to it.
  */
 export interface Mail {
+  message_id?: string;
+  headers?: Record<string, string>;
+  reply_to?: string[];
   id: string;
   from: string;
   to: string[];
@@ -66,6 +72,7 @@ export interface Mail {
 }
 
 export interface SendEmailInput {
+  headers?: Record<string, string>;
   from: string;
   to: string[];
   subject: string;

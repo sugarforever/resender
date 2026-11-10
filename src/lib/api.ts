@@ -10,7 +10,7 @@ import type {
 
 /**
  * Typed wrapper around the Rust commands. Every Resend call is proxied through
- * the backend so the API key never enters the webview.
+ * the backend. Only key entry and Settings reveal use the key in the webview.
  */
 export const api = {
   hasApiKey: () => invoke<boolean>("has_api_key"),

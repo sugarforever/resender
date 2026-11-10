@@ -52,7 +52,11 @@ fn display_from(input: &str) -> String {
     input.trim().to_string()
 }
 
-async fn do_poll(app: &AppHandle, inner: &Arc<PollerInner>) {
+fn is_current(inner: &PollerInner, generation: u64) -> bool {
+    inner.generation.load(Ordering::SeqCst) == generation
+}
+
+async fn do_poll(app: &AppHandle, inner: &Arc<PollerInner>, generation: u64) {
     let key = match crate::keychain::get_api_key() {
         Ok(Some(k)) if !k.is_empty() => k,
         _ => return,
@@ -68,7 +72,9 @@ async fn do_poll(app: &AppHandle, inner: &Arc<PollerInner>) {
     {
         Ok(v) => v,
         Err(e) => {
-            let _ = app.emit("inbox-error", e);
+            if is_current(inner, generation) {
+                let _ = app.emit("inbox-error", e);
+            }
             return;
         }
     };
@@ -79,28 +85,46 @@ async fn do_poll(app: &AppHandle, inner: &Arc<PollerInner>) {
         .cloned()
         .unwrap_or_default();
 
-    let seeded = inner.seeded.load(Ordering::Relaxed);
-    let mut fresh: Vec<Value> = Vec::new();
-    let mut fresh_ids: Vec<String> = Vec::new();
-    {
-        let mut known = inner.known.lock().unwrap();
-        for item in &items {
-            if let Some(id) = item.get("id").and_then(Value::as_str) {
-                // insert() returns true if the id was not already present.
-                if known.insert(id.to_string()) && seeded {
-                    fresh.push(item.clone());
-                    fresh_ids.push(id.to_string());
-                }
-            }
-        }
-    }
-    inner.seeded.store(true, Ordering::Relaxed);
+    let Some((fresh, fresh_ids)) = accept_poll(inner, generation, &items) else {
+        return;
+    };
 
+    if !is_current(inner, generation) {
+        return;
+    }
     if !fresh.is_empty() {
         notify_new(app, &fresh);
     }
 
-    let _ = app.emit("inbox-data", json!({ "emails": items, "newIds": fresh_ids }));
+    let _ = app.emit(
+        "inbox-data",
+        json!({ "emails": items, "newIds": fresh_ids }),
+    );
+}
+
+fn accept_poll(
+    inner: &PollerInner,
+    generation: u64,
+    items: &[Value],
+) -> Option<(Vec<Value>, Vec<String>)> {
+    let mut known = inner.known.lock().unwrap();
+    if !is_current(inner, generation) {
+        return None;
+    }
+    let seeded = inner.seeded.load(Ordering::Relaxed);
+    let mut fresh: Vec<Value> = Vec::new();
+    let mut fresh_ids: Vec<String> = Vec::new();
+    for item in items {
+        if let Some(id) = item.get("id").and_then(Value::as_str) {
+            // insert() returns true if the id was not already present.
+            if known.insert(id.to_string()) && seeded {
+                fresh.push(item.clone());
+                fresh_ids.push(id.to_string());
+            }
+        }
+    }
+    inner.seeded.store(true, Ordering::Relaxed);
+    Some((fresh, fresh_ids))
 }
 
 fn notify_new(app: &AppHandle, fresh: &[Value]) {
@@ -132,11 +156,14 @@ fn spawn_loop(app: AppHandle, inner: Arc<PollerInner>, generation: u64) {
             if inner.generation.load(Ordering::SeqCst) != generation {
                 break;
             }
-            do_poll(&app, &inner).await;
+            do_poll(&app, &inner, generation).await;
             if inner.generation.load(Ordering::SeqCst) != generation {
                 break;
             }
-            let secs = inner.interval_secs.load(Ordering::Relaxed).max(MIN_INTERVAL);
+            let secs = inner
+                .interval_secs
+                .load(Ordering::Relaxed)
+                .max(MIN_INTERVAL);
             tokio::select! {
                 _ = tokio::time::sleep(Duration::from_secs(secs)) => {}
                 _ = inner.poll_now.notified() => {}
@@ -150,18 +177,24 @@ fn spawn_loop(app: AppHandle, inner: Arc<PollerInner>, generation: u64) {
 #[tauri::command]
 pub fn start_poller(app: AppHandle, state: State<Poller>, interval_secs: u64) {
     let inner = state.0.clone();
+    let mut known = inner.known.lock().unwrap();
+    let generation = inner.generation.fetch_add(1, Ordering::SeqCst) + 1;
     inner
         .interval_secs
         .store(interval_secs.max(MIN_INTERVAL), Ordering::Relaxed);
     inner.seeded.store(false, Ordering::Relaxed);
-    inner.known.lock().unwrap().clear();
-    let generation = inner.generation.fetch_add(1, Ordering::SeqCst) + 1;
+    known.clear();
+    drop(known);
     spawn_loop(app, inner, generation);
 }
 
 /// Stop the poller (e.g. on disconnect). The loop exits at its next checkpoint.
 #[tauri::command]
 pub fn stop_poller(state: State<Poller>) {
+    invalidate(&state);
+}
+
+pub fn invalidate(state: &Poller) {
     state.0.generation.fetch_add(1, Ordering::SeqCst);
 }
 
@@ -179,4 +212,33 @@ pub fn set_poll_interval(state: State<Poller>, interval_secs: u64) {
 #[tauri::command]
 pub fn poll_now(state: State<Poller>) {
     state.0.poll_now.notify_one();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn stale_account_poll_cannot_seed_or_update_current_inbox() {
+        let inner = PollerInner::default();
+        let old_generation = inner.generation.load(Ordering::SeqCst);
+        // Simulate key replacement while the old account's HTTP request is pending.
+        inner.generation.fetch_add(1, Ordering::SeqCst);
+        assert!(accept_poll(
+            &inner,
+            old_generation,
+            &[json!({ "id": "old-account-mail" })]
+        )
+        .is_none());
+        assert!(inner.known.lock().unwrap().is_empty());
+        assert!(!inner.seeded.load(Ordering::Relaxed));
+        assert!(!is_current(&inner, old_generation));
+        assert!(accept_poll(
+            &inner,
+            old_generation + 1,
+            &[json!({ "id": "new-account-mail" })]
+        )
+        .is_some());
+        assert!(inner.known.lock().unwrap().contains("new-account-mail"));
+    }
 }
