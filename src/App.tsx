@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Toaster } from "sonner";
 import { api } from "@/lib/api";
-import { getPollInterval, setPollInterval, type Theme } from "@/lib/prefs";
+import { getDefaultFrom, getPollInterval, setPollInterval, type Theme } from "@/lib/prefs";
 import { useTheme } from "@/hooks/useTheme";
 import { useReceived } from "@/hooks/useReceived";
 import { useSent } from "@/hooks/useSent";
@@ -18,6 +18,8 @@ function App() {
   const [view, setView] = useState<View>("inbox");
   const [pollSec, setPollSec] = useState(() => getPollInterval());
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [defaultFrom, setDefaultFrom] = useState(getDefaultFrom);
+  const [connectionVersion, setConnectionVersion] = useState(0);
 
   const received = useReceived({
     configured: configured === true,
@@ -78,11 +80,13 @@ function App() {
       <div className="bg-background flex h-full">
         {configured && (
           <Sidebar
+            key={connectionVersion}
             view={view}
             onChange={openCompose}
             unreadCount={received.unreadCount}
             theme={theme}
             onToggleTheme={toggle}
+            defaultFrom={defaultFrom}
           />
         )}
 
@@ -122,6 +126,7 @@ function App() {
             />
           ) : (
             <SettingsView
+              onFromChange={setDefaultFrom}
               pollIntervalSec={pollSec}
               onPollChange={handlePollChange}
               theme={theme}
@@ -130,7 +135,10 @@ function App() {
                 setConfigured(false);
                 setView("inbox");
               }}
-              onKeySaved={() => setConfigured(true)}
+              onKeySaved={() => {
+                setConfigured(true);
+                setConnectionVersion((version) => version + 1);
+              }}
             />
           )}
         </main>

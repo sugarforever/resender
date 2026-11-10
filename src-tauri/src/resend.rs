@@ -224,3 +224,15 @@ pub async fn list_sent(limit: Option<u32>) -> Result<Value, String> {
 pub async fn get_sent(id: String) -> Result<Value, String> {
     request(Method::GET, &format!("/emails/{id}"), None).await
 }
+
+/// List domains accessible to the configured key, one page at a time.
+#[tauri::command]
+pub async fn list_domains(after: Option<String>) -> Result<Value, String> {
+    let mut url = reqwest::Url::parse(&format!("{BASE_URL}/domains?limit=100"))
+        .map_err(|e| e.to_string())?;
+    if let Some(cursor) = after {
+        url.query_pairs_mut().append_pair("after", &cursor);
+    }
+    let path = format!("{}?{}", url.path(), url.query().unwrap_or_default());
+    request(Method::GET, &path, None).await
+}

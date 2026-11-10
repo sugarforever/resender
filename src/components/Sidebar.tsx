@@ -3,6 +3,8 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Theme } from "@/lib/prefs";
+import { parseAddress } from "@/lib/format";
+import { ConnectedDomains } from "@/components/ConnectedDomains";
 
 export type View = "inbox" | "sent" | "compose" | "settings";
 
@@ -12,6 +14,7 @@ interface Props {
   unreadCount: number;
   theme: Theme;
   onToggleTheme: () => void;
+  defaultFrom: string;
 }
 
 const NAV: { id: View; label: string; icon: typeof Inbox }[] = [
@@ -25,7 +28,10 @@ export function Sidebar({
   unreadCount,
   theme,
   onToggleTheme,
+  defaultFrom,
 }: Props) {
+  const { email } = parseAddress(defaultFrom);
+  const domain = email.includes("@") ? email.slice(email.lastIndexOf("@") + 1) : "";
   return (
     <aside className="bg-sidebar text-sidebar-foreground border-sidebar-border flex w-60 shrink-0 flex-col border-r">
       <div className="flex h-14 items-center gap-2.5 px-4">
@@ -38,6 +44,25 @@ export function Sidebar({
           Resender
         </span>
       </div>
+
+      <ConnectedDomains />
+
+      <button
+        onClick={() => onChange("settings")}
+        className="hover:bg-sidebar-accent mx-3 mb-3 rounded-lg border border-sidebar-border p-3 text-left cursor-pointer"
+        aria-label="Sender identity — open Settings"
+      >
+        <span className="text-muted-foreground block text-[10px] font-semibold uppercase tracking-wider">Default sender</span>
+        <span className="mt-1 block truncate text-sm font-medium" title={domain || undefined}>
+          {domain || "No sender configured"}
+        </span>
+        <span className="text-muted-foreground mt-0.5 block truncate text-xs" title={email || undefined}>
+          {email || "Set your email in Settings"}
+        </span>
+        <span className="text-muted-foreground mt-2 block text-[11px] leading-relaxed">
+          Mailboxes show all mail available to your API key.
+        </span>
+      </button>
 
       <div className="px-3 pt-1 pb-2">
         <Button

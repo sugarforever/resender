@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
+  Domain,
   ListResponse,
   ReceivedEmail,
   SendEmailInput,
@@ -16,6 +17,8 @@ export const api = {
   revealApiKey: () => invoke<string | null>("reveal_api_key"),
   saveApiKey: (key: string) => invoke<void>("save_api_key", { key }),
   deleteApiKey: () => invoke<void>("delete_api_key"),
+  listDomains: (after?: string) =>
+    invoke<ListResponse<Domain>>("list_domains", { after }),
 
   sendEmail: (input: SendEmailInput) =>
     invoke<SendResult>("send_email", { input }),

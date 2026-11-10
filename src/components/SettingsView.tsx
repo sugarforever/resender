@@ -43,19 +43,21 @@ interface Props {
 }
 
 export function SettingsView({
+  onFromChange,
   pollIntervalSec,
   onPollChange,
   theme,
   onThemeChange,
   onDisconnected,
   onKeySaved,
-}: Props) {
+}: Props & { onFromChange: (from: string) => void }) {
   const [from, setFrom] = useState(getDefaultFrom());
   const [poll, setPoll] = useState(String(pollIntervalSec));
   const [disconnecting, setDisconnecting] = useState(false);
 
   const saveFrom = () => {
     setDefaultFrom(from);
+    onFromChange(getDefaultFrom());
     toast.success("Default sender saved.");
   };
 

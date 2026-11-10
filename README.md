@@ -7,6 +7,8 @@ Tauri, React, shadcn/ui, and lucide icons.
 
 ## Features
 
+- **Connected domains** — automatically lists your Resend domains and their
+  verification status in the sidebar, separately from your default sender.
 - **Secure API key storage** — your Resend key is kept in the OS-native keychain
   (Keychain on macOS, Credential Manager on Windows, Secret Service on Linux),
   never in plain text or the webview.
@@ -32,6 +34,7 @@ Tauri, React, shadcn/ui, and lucide icons.
 | Send          | `POST /emails`                  |
 | List sent     | `GET /emails`                   |
 | Read sent     | `GET /emails/{id}`              |
+| List domains  | `GET /domains`                  |
 | List received | `GET /emails/receiving`         |
 | Read received | `GET /emails/receiving/{id}`    |
 

@@ -11,6 +11,13 @@ export interface ListResponse<T> {
   data: T[];
 }
 
+export interface Domain {
+  id: string;
+  name: string;
+  status: string;
+  region: string;
+}
+
 /** A received (inbound) email as returned by the list endpoint. */
 export interface ReceivedEmail {
   id: string;
