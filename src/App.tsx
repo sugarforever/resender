@@ -30,7 +30,13 @@ function App() {
   }, []);
   if (configured === null)
     return (
-      <div className="flex h-full items-center justify-center">Loading…</div>
+      <div
+        role="status"
+        className="bg-background flex h-full flex-col items-center justify-center gap-3 text-sm text-muted-foreground"
+      >
+        <img src="/logo.png" alt="" className="size-9 rounded-lg" />
+        Opening Resender…
+      </div>
     );
   const connected = () => {
     setConfigured(true);
@@ -64,6 +70,12 @@ function ConnectedApp({
 }) {
   const { theme, setTheme, toggle } = themeControls;
   const [view, setView] = useState<View>("inbox");
+  const [sentSelection, setSentSelection] = useState<string>();
+  const [mailbox, setMailbox] = useState<"inbox" | "sent">("inbox");
+  const navigate = (next: View) => {
+    if (next === "inbox" || next === "sent") setMailbox(next);
+    setView(next);
+  };
   const [pollSec, setPollSec] = useState(() => getPollInterval());
   const [defaultFrom, setDefaultFrom] = useState(getDefaultFrom);
   const received = useReceived({
@@ -87,10 +99,10 @@ function ConnectedApp({
 
   return (
     <>
-      <div className="bg-background flex h-full">
+      <div className="app-shell bg-background flex h-full">
         <Sidebar
           view={view}
-          onChange={setView}
+          onChange={navigate}
           unreadCount={received.unreadCount}
           theme={theme}
           onToggleTheme={toggle}
@@ -98,52 +110,48 @@ function ConnectedApp({
         />
 
         <main className="min-w-0 flex-1">
-          {view === "inbox" ? (
+          {view !== "settings" ? (
             <MailboxView
-              key="inbox"
-              kind="inbox"
+              key={mailbox}
+              kind={mailbox}
+              revealMessageId={mailbox === "sent" ? sentSelection : undefined}
+              composer={
+                view === "compose" ? (
+                  <ComposeView
+                    onSent={(mail) => {
+                      handleSent(mail);
+                      setSentSelection(mail.id);
+                      navigate("sent");
+                    }}
+                  />
+                ) : undefined
+              }
+              onCloseComposer={() => setView(mailbox)}
               conversations={threads.conversations}
               indexing={threads.indexing}
               incomplete={threads.incomplete}
               onRetryIndex={threads.retry}
               onSent={handleSent}
-              loading={received.loading}
+              loading={mailbox === "inbox" ? received.loading : sent.loading}
               error={
-                received.error ||
-                (sent.error
-                  ? `Delivery status could not sync: ${sent.error}`
-                  : null)
+                mailbox === "inbox"
+                  ? received.error ||
+                    (sent.error
+                      ? `Delivery status could not sync: ${sent.error}`
+                      : null)
+                  : sent.error
               }
               onRefresh={() => {
-                received.refreshNow();
+                if (mailbox === "inbox") received.refreshNow();
                 void sent.refresh();
               }}
               fetchFull={threads.fetchFull}
               unreadIds={received.unreadIds}
               onOpen={received.markRead}
-              nextRefreshAt={received.nextRefreshAt}
-              pollIntervalSec={pollSec}
-            />
-          ) : view === "sent" ? (
-            <MailboxView
-              key="sent"
-              kind="sent"
-              conversations={threads.conversations}
-              indexing={threads.indexing}
-              incomplete={threads.incomplete}
-              onRetryIndex={threads.retry}
-              onSent={handleSent}
-              loading={sent.loading}
-              error={sent.error}
-              onRefresh={() => void sent.refresh()}
-              fetchFull={threads.fetchFull}
-            />
-          ) : view === "compose" ? (
-            <ComposeView
-              onSent={(mail) => {
-                handleSent(mail);
-                setView("sent");
-              }}
+              nextRefreshAt={
+                mailbox === "inbox" ? received.nextRefreshAt : undefined
+              }
+              pollIntervalSec={mailbox === "inbox" ? pollSec : undefined}
             />
           ) : (
             <SettingsView

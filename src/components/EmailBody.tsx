@@ -28,7 +28,7 @@ export function EmailBody({
   const unresolvedImages =
     formatted && /\b(?:src|href)\s*=\s*["']?cid:/i.test(html ?? "");
   return (
-    <div className="border-t">
+    <div className="email-body border-t">
       {alternatives && (
         <div
           role="tablist"
@@ -89,7 +89,7 @@ export function EmailBody({
             srcDoc={documentHtml}
           />
         ) : (
-          <pre className="p-4 font-sans text-sm leading-[1.6] break-words whitespace-pre-wrap">
+          <pre className="email-text p-4 font-sans text-sm leading-[1.6] break-words whitespace-pre-wrap">
             {hasText ? text : "This email has no content to display."}
           </pre>
         )}

@@ -35,12 +35,13 @@ const statuses: Record<
     icon: Send,
     label: "Sent",
     description: "Sent by Resend; delivery is not confirmed yet.",
-    color: "text-blue-600 dark:text-blue-400",
+    color: "text-brand-text",
   },
   delivered: {
     icon: CheckCheck,
     label: "Delivered",
-    description: "Accepted by the recipient's mail server.",
+    description:
+      "Accepted by the recipient's mail server; this is not a read receipt.",
     color: "text-emerald-600 dark:text-emerald-400",
   },
   opened: {
@@ -52,7 +53,8 @@ const statuses: Record<
   clicked: {
     icon: MousePointer2,
     label: "Clicked",
-    description: "A link click was reported for this email.",
+    description:
+      "A link click was reported; scanners may trigger click tracking.",
     color: "text-emerald-600 dark:text-emerald-400",
   },
   delivery_delayed: {
@@ -100,7 +102,13 @@ const statuses: Record<
   },
 };
 
-export function DeliveryStatus({ event }: { event?: string }) {
+export function DeliveryStatus({
+  event,
+  showLabel = false,
+}: {
+  event?: string;
+  showLabel?: boolean;
+}) {
   const key = normalizeDeliveryEvent(event);
   const state = statuses[key] ?? {
     icon: CircleHelp,
@@ -118,9 +126,10 @@ export function DeliveryStatus({ event }: { event?: string }) {
       aria-label={explanation}
       title={explanation}
       tabIndex={0}
-      className={`mr-2 inline-flex size-6 shrink-0 items-center justify-center rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${state.color}`}
+      className={`mr-2 inline-flex shrink-0 items-center justify-center gap-1.5 rounded text-[11px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${showLabel ? "mt-4 px-2 py-1 bg-muted/40" : "mt-3 size-6"} ${state.color}`}
     >
       <Icon aria-hidden="true" className={`size-4 ${state.animation ?? ""}`} />
+      {showLabel && <span aria-hidden="true">{state.label}</span>}
     </span>
   );
 }

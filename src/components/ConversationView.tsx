@@ -18,6 +18,7 @@ import {
   initials,
   joinAddresses,
   shortDate,
+  parseAddress,
 } from "@/lib/format";
 import { messageId } from "@/lib/threads";
 import { quotedOriginal } from "@/lib/reply-body";
@@ -78,8 +79,8 @@ export function ConversationView({
   };
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="flex shrink-0 items-baseline gap-3 border-b px-6 py-4">
-        <h2 className="text-xl font-semibold">
+      <header className="flex min-h-14 shrink-0 flex-wrap items-baseline gap-x-3 px-6 py-4">
+        <h2 className="text-[18px] leading-[26px] font-semibold">
           {conversation.messages[0].subject || "(no subject)"}
         </h2>
         <p className="text-muted-foreground text-xs">
@@ -87,14 +88,14 @@ export function ConversationView({
           {conversation.messages.length === 1 ? "message" : "messages"}
         </p>
       </header>
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-1">
-        <div className="divide-border/60 divide-y">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="conversation-content">
           {middle.length > 0 ? (
             <>
               {renderMessage(conversation.messages[0])}
               <div>
                 {!middleOpen && (
-                  <div className="px-2 py-2">
+                  <div className="thread-count-row">
                     <button
                       type="button"
                       aria-label={`Show ${middle.length} earlier ${middle.length === 1 ? "message" : "messages"}`}
@@ -116,7 +117,7 @@ export function ConversationView({
                     </button>
                   </div>
                 )}
-                <div id={middleId} className="divide-border/60 divide-y">
+                <div id={middleId} className="">
                   {middleOpen && middle.map((mail) => renderMessage(mail))}
                 </div>
               </div>
@@ -130,7 +131,7 @@ export function ConversationView({
           {replyTarget && (
             <div
               ref={composerRef}
-              className="my-4 overflow-hidden rounded-lg border bg-background"
+              className="reply-frame overflow-hidden bg-background"
             >
               {!messageId(replyTarget) && (
                 <p className="text-muted-foreground px-6 pt-4 text-xs">
@@ -204,8 +205,8 @@ function MessageCard({
   };
   const Header = canCollapse ? "button" : "div";
   return (
-    <article>
-      <div className="flex items-center">
+    <article className="message-card" data-expanded={expanded}>
+      <div className="flex items-start">
         <Header
           type={canCollapse ? "button" : undefined}
           onClick={canCollapse ? onToggle : undefined}
@@ -215,22 +216,25 @@ function MessageCard({
               ? `${expanded ? "Collapse" : "Expand"} message from ${display.from}`
               : undefined
           }
-          className="hover:bg-accent/30 focus-visible:outline-ring flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+          className="message-header hover:bg-accent/30 focus-visible:outline-ring flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
         >
-          <span className="bg-muted text-muted-foreground flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-medium">
+          <span className="message-avatar bg-muted text-muted-foreground flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-medium">
             {initials(display.from)}
           </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium">
+          <span className="message-identity min-w-0 flex-1">
+            <span className="truncate text-[13px] font-semibold">
               {displayName(display.from)}
             </span>
             {expanded && (
               <span className="text-muted-foreground mt-0.5 block truncate text-xs">
+                <span className="block truncate">
+                  {parseAddress(display.from).email}
+                </span>
                 To {joinAddresses(display.to)}
               </span>
             )}
             {!expanded && (
-              <span className="text-muted-foreground mt-0.5 block truncate text-xs">
+              <span className="message-preview text-muted-foreground mt-0.5 block truncate text-xs">
                 {(
                   display.text?.trim() ||
                   (display.html ? quotedOriginal(display).content : "")
@@ -250,13 +254,13 @@ function MessageCard({
           </time>
           {canCollapse &&
             (expanded ? (
-              <ChevronDown className="text-muted-foreground size-3.5 shrink-0" />
+              <ChevronDown className="message-chevron text-muted-foreground size-3.5 shrink-0" />
             ) : (
-              <ChevronRight className="text-muted-foreground size-3.5 shrink-0" />
+              <ChevronRight className="message-chevron text-muted-foreground size-3.5 shrink-0" />
             ))}
         </Header>
         {mail.direction === "sent" && (
-          <DeliveryStatus event={display.last_event} />
+          <DeliveryStatus event={display.last_event} showLabel={expanded} />
         )}
         {mail.direction === "received" && (
           <span aria-hidden="true" className="mr-2 size-6 shrink-0" />
@@ -293,14 +297,16 @@ function MessageCard({
                   ))}
                 </div>
               ) : null}
-              <EmailBody
-                html={display.html}
-                text={display.text}
-                htmlFormat={display.html_format}
-              />
-              <div className="flex justify-end p-3">
+              <div className="message-body">
+                <EmailBody
+                  html={display.html}
+                  text={display.text}
+                  htmlFormat={display.html_format}
+                />
+              </div>
+              <div className="flex px-4 pb-4 pt-1">
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   disabled={replyDisabled}
                   onClick={() => onReply(display)}

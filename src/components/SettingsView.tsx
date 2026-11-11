@@ -1,5 +1,14 @@
 import { useState } from "react";
-import { Bell, Palette, KeyRound, Trash2, Loader2 } from "lucide-react";
+import {
+  Bell,
+  Palette,
+  KeyRound,
+  Unplug,
+  Loader2,
+  Save,
+  Sun,
+  Moon,
+} from "lucide-react";
 import { toast } from "sonner";
 import { api, errMessage } from "@/lib/api";
 import {
@@ -71,7 +80,9 @@ export function SettingsView({
     setDisconnecting(true);
     try {
       await api.deleteApiKey();
-      toast.success("Disconnected. Your API key was removed from the keychain.");
+      toast.success(
+        "Disconnected. Your API key was removed from the keychain.",
+      );
       onDisconnected();
     } catch (e) {
       toast.error("Couldn't disconnect", { description: errMessage(e) });
@@ -82,13 +93,13 @@ export function SettingsView({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="flex h-14 items-center px-6">
-        <h1 className="text-sm font-semibold">Settings</h1>
+      <header className="flex h-14 shrink-0 items-center px-6">
+        <h1 className="text-[15px] font-semibold">Settings</h1>
       </header>
       <Separator />
 
       <ScrollArea className="min-h-0 flex-1">
-        <div className="mx-auto flex max-w-2xl flex-col gap-6 p-6">
+        <div className="settings-content mx-auto flex max-w-[728px] flex-col gap-4 p-6">
           {/* Account / API key */}
           <Card>
             <CardHeader>
@@ -105,6 +116,7 @@ export function SettingsView({
                 onSaved={onKeySaved}
                 submitLabel="Update key"
                 loadExisting
+                iconOnly
               />
               <Separator />
               <div className="flex items-center justify-between">
@@ -118,15 +130,16 @@ export function SettingsView({
                   <AlertDialogTrigger asChild>
                     <Button
                       variant="destructive"
-                      size="sm"
+                      size="icon"
+                      aria-label="Disconnect Resend account"
+                      title="Disconnect Resend account"
                       disabled={disconnecting}
                     >
                       {disconnecting ? (
                         <Loader2 className="size-4 animate-spin" />
                       ) : (
-                        <Trash2 className="size-4" />
+                        <Unplug aria-hidden="true" className="size-4" />
                       )}
-                      Disconnect
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
@@ -173,8 +186,14 @@ export function SettingsView({
                     value={from}
                     onChange={(e) => setFrom(e.target.value)}
                   />
-                  <Button variant="outline" onClick={saveFrom}>
-                    Save
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={saveFrom}
+                    aria-label="Save default sender"
+                    title="Save default sender"
+                  >
+                    <Save aria-hidden="true" className="size-4" />
                   </Button>
                 </div>
                 <p className="text-muted-foreground text-xs">
@@ -229,11 +248,17 @@ export function SettingsView({
                   <Button
                     key={t}
                     variant={theme === t ? "default" : "outline"}
-                    size="sm"
-                    className="capitalize"
+                    size="icon"
+                    aria-label={`${t === "light" ? "Light" : "Dark"} theme`}
+                    title={`${t === "light" ? "Light" : "Dark"} theme`}
+                    aria-pressed={theme === t}
                     onClick={() => onThemeChange(t)}
                   >
-                    {t}
+                    {t === "light" ? (
+                      <Sun aria-hidden="true" className="size-4" />
+                    ) : (
+                      <Moon aria-hidden="true" className="size-4" />
+                    )}
                   </Button>
                 ))}
               </div>
